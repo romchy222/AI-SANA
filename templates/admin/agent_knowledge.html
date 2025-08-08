@@ -1,0 +1,841 @@
+{% extends "base_new.html" %}
+
+{% block title %}{{ _('knowledge.title') }} - {{ _('admin.title') }}{% endblock %}
+
+{% block head %}
+<style>
+    .knowledge-card {
+        transition: var(--transition);
+        border-left: 4px solid transparent;
+    }
+
+    .knowledge-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .knowledge-card.featured {
+        border-left-color: var(--primary-color);
+        background: linear-gradient(135deg, rgba(79, 70, 229, 0.05), transparent);
+    }
+
+    .agent-type-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .agent-type-admission { background: rgba(79, 70, 229, 0.1); color: #4F46E5; }
+    .agent-type-scholarship { background: rgba(16, 185, 129, 0.1); color: #10B981; }
+    .agent-type-academic { background: rgba(59, 130, 246, 0.1); color: #3B82F6; }
+    .agent-type-student_life { background: rgba(245, 158, 11, 0.1); color: #F59E0B; }
+    .agent-type-general { background: rgba(107, 114, 128, 0.1); color: #6B7280; }
+    .agent-type-technical { background: rgba(55, 65, 81, 0.1); color: #374151; }
+    .agent-type-international { background: rgba(168, 85, 247, 0.1); color: #A855F7; }
+
+    .content-preview {
+        max-height: 100px;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .content-preview::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 20px;
+        width: 100%;
+        background: linear-gradient(transparent, var(--bg-primary));
+    }
+
+    .priority-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .priority-star {
+        color: #F59E0B;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">{{ _('knowledge.title') }}</h1>
+            <p class="text-muted">Управление базами знаний для агентов</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
+                <i class="fas fa-filter me-1"></i>Фильтр
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addKnowledgeModal">
+                <i class="fas fa-plus me-1"></i>{{ _('knowledge.add_new') }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-0">{{ total_entries or 0 }}</h5>
+                            <small>Всего записей</small>
+                        </div>
+                        <i class="fas fa-database fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-0">{{ active_entries or 0 }}</h5>
+                            <small>Активных записей</small>
+                        </div>
+                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-0">{{ featured_entries or 0 }}</h5>
+                            <small>Рекомендуемых</small>
+                        </div>
+                        <i class="fas fa-star fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-0">{{ agent_types_count or 0 }}</h5>
+                            <small>Типов агентов</small>
+                        </div>
+                        <i class="fas fa-users-cog fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Knowledge Entries -->
+    <div class="row g-4">
+        {% for entry in knowledge_entries %}
+        <div class="col-lg-6">
+            <div class="card knowledge-card h-100 {% if entry.is_featured %}featured{% endif %}">
+                <div class="card-header bg-transparent border-bottom-0 pb-0">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <h6 class="card-title mb-2">{{ entry.title }}</h6>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="agent-type-badge agent-type-{{ entry.agent_type }}">
+                                    {% if entry.agent_type == 'admission' %}
+                                        <i class="fas fa-graduation-cap"></i>{{ _('agent.admission') }}
+                                    {% elif entry.agent_type == 'scholarship' %}
+                                        <i class="fas fa-award"></i>{{ _('agent.scholarship') }}
+                                    {% elif entry.agent_type == 'academic' %}
+                                        <i class="fas fa-book-open"></i>{{ _('agent.academic') }}
+                                    {% elif entry.agent_type == 'student_life' %}
+                                        <i class="fas fa-users"></i>{{ _('agent.student_life') }}
+                                    {% elif entry.agent_type == 'general' %}
+                                        <i class="fas fa-info-circle"></i>{{ _('agent.general') }}
+                                    {% endif %}
+                                </span>
+                                {% if entry.is_featured %}
+                                <span class="badge bg-warning text-dark">
+                                    <i class="fas fa-star me-1"></i>Рекомендуемое
+                                </span>
+                                {% endif %}
+                                {% if not entry.is_active %}
+                                <span class="badge bg-secondary">Неактивное</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="editKnowledge({{ entry.id }})">
+                                    <i class="fas fa-edit me-2"></i>{{ _('knowledge.edit') }}
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="toggleFeatured({{ entry.id }})">
+                                    <i class="fas fa-star me-2"></i>{% if entry.is_featured %}Убрать из рекомендуемых{% else %}Добавить в рекомендуемые{% endif %}
+                                </a></li>
+                                <li><a class="dropdown-item" href="#" onclick="toggleActive({{ entry.id }})">
+                                    <i class="fas fa-{% if entry.is_active %}eye-slash{% else %}eye{% endif %} me-2"></i>{% if entry.is_active %}Деактивировать{% else %}Активировать{% endif %}
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteKnowledge({{ entry.id }})">
+                                    <i class="fas fa-trash me-2"></i>{{ _('knowledge.delete') }}
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="content-preview">
+                        <div class="small text-muted mb-2">{{ entry.content_ru[:200] }}{% if entry.content_ru|length > 200 %}...{% endif %}</div>
+                    </div>
+
+                    {% if entry.keywords %}
+                    <div class="mb-2">
+                        {% for keyword in entry.keywords.split(',')[:3] %}
+                        <span class="badge bg-light text-dark me-1">#{{ keyword.strip() }}</span>
+                        {% endfor %}
+                        {% if entry.keywords.split(',')|length > 3 %}
+                        <span class="text-muted small">+{{ entry.keywords.split(',')|length - 3 }} еще</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="row text-muted small">
+                        <div class="col">
+                            <div class="priority-indicator">
+                                {% for i in range(entry.priority) %}
+                                <i class="fas fa-star priority-star"></i>
+                                {% endfor %}
+                                <span class="ms-1">Приоритет {{ entry.priority }}</span>
+                            </div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar me-1"></i>
+                            {{ entry.updated_at.strftime('%d.%m.%Y') if entry.updated_at else 'N/A' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        {% if not knowledge_entries %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-database fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Записи базы знаний не найдены</h5>
+                <p class="text-muted">Добавьте первую запись для начала работы</p>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addKnowledgeModal">
+                    <i class="fas fa-plus me-1"></i>{{ _('knowledge.add_new') }}
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+    <!-- Edit Knowledge Modal -->
+    <div class="modal fade" id="editKnowledgeModal" tabindex="-1" aria-labelledby="editKnowledgeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editKnowledgeModalLabel">Редактировать запись</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="editKnowledgeForm" onsubmit="updateKnowledge(event)">
+                    <div class="modal-body">
+                        <input type="hidden" id="edit_knowledge_id" name="knowledge_id">
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="edit_title" class="form-label">Заголовок *</label>
+                                    <input type="text" class="form-control" id="edit_title" name="title" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="edit_agent_type" class="form-label">Тип агента *</label>
+                                    <select class="form-select" id="edit_agent_type" name="agent_type" required>
+                                        <option value="">Выберите тип агента</option>
+                                        <option value="admission">AI-Abitur</option>
+                                        <option value="scholarship">KadrAI</option>
+                                        <option value="academic">UniNav</option>
+                                        <option value="student_life">UniRoom</option>
+                                        <option value="general">CareerNavigator</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_content_ru" class="form-label">Содержание (русский) *</label>
+                            <textarea class="form-control" id="edit_content_ru" name="content_ru" rows="4" required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_content_kz" class="form-label">Содержание (казахский) *</label>
+                            <textarea class="form-control" id="edit_content_kz" name="content_kz" rows="4" required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="edit_content_en" class="form-label">Content (English)</label>
+                            <textarea class="form-control" id="edit_content_en" name="content_en" rows="4"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="edit_keywords" class="form-label">Ключевые слова</label>
+                                    <input type="text" class="form-control" id="edit_keywords" name="keywords" placeholder="через запятую">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="edit_priority" class="form-label">Приоритет</label>
+                                    <select class="form-select" id="edit_priority" name="priority">
+                                        <option value="1">1 (Высокий)</option>
+                                        <option value="2">2 (Средний)</option>
+                                        <option value="3">3 (Низкий)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="edit_category" class="form-label">Категория</label>
+                                    <input type="text" class="form-control" id="edit_category" name="category">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="edit_is_featured" name="is_featured">
+                                    <label class="form-check-label" for="edit_is_featured">
+                                        Рекомендуемое
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active" checked>
+                                    <label class="form-check-label" for="edit_is_active">
+                                        Активно
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('knowledge.cancel') }}</button>
+                        <button type="submit" class="btn btn-primary">{{ _('knowledge.save') }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <nav aria-label="Pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link"
+                   href="?page={{ pagination.prev_num }}{% for k, v in request.args.items() if k != 'page' %}&{{ k }}={{ v }}{% endfor %}">
+                   Предыдущая
+                </a>
+            </li>
+            {% for p in range(1, pagination.pages + 1) %}
+                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                    <a class="page-link"
+                       href="?page={{ p }}{% for k, v in request.args.items() if k != 'page' %}&{{ k }}={{ v }}{% endfor %}">
+                       {{ p }}
+                    </a>
+                </li>
+            {% endfor %}
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                <a class="page-link"
+                   href="?page={{ pagination.next_num }}{% for k, v in request.args.items() if k != 'page' %}&{{ k }}={{ v }}{% endfor %}">
+                   Следующая
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Add Knowledge Modal -->
+<div class="modal fade" id="addKnowledgeModal" tabindex="-1" aria-labelledby="addKnowledgeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addKnowledgeModalLabel">{{ _('knowledge.add_new') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form onsubmit="submitKnowledge(event)">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="title" class="form-label">{{ _('knowledge.title') }} *</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="agent_type" class="form-label">{{ _('knowledge.agent_type') }} *</label>
+                            <select class="form-select" id="agent_type" name="agent_type" required>
+                                <option value="">Выберите тип агента</option>
+                                <option value="admission">{{ _('agent.admission') }}</option>
+                                <option value="academic">{{ _('agent.academic') }}</option>
+                                <option value="scholarship">{{ _('agent.scholarship') }}</option>
+                                <option value="student_life">{{ _('agent.student_life') }}</option>
+                                <option value="general">{{ _('agent.general') }}</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="content_ru" class="form-label">{{ _('knowledge.content_ru') }} *</label>
+                            <textarea class="form-control" id="content_ru" name="content_ru" rows="4" required></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="content_kz" class="form-label">{{ _('knowledge.content_kz') }} *</label>
+                            <textarea class="form-control" id="content_kz" name="content_kz" rows="4" required></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="content_en" class="form-label">Content (English)</label>
+                            <textarea class="form-control" id="content_en" name="content_en" rows="4"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="keywords" class="form-label">{{ _('knowledge.keywords') }}</label>
+                            <input type="text" class="form-control" id="keywords" name="keywords" placeholder="ключевые слова, через запятую">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="priority" class="form-label">{{ _('knowledge.priority') }}</label>
+                            <select class="form-select" id="priority" name="priority">
+                                <option value="1">Высокий (1)</option>
+                                <option value="2" selected>Средний (2)</option>
+                                <option value="3">Низкий (3)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="category" class="form-label">Категория</label>
+                            <input type="text" class="form-control" id="category" name="category">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured">
+                                <label class="form-check-label" for="is_featured">
+                                    Рекомендуемое
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                                <label class="form-check-label" for="is_active">
+                                    {{ _('knowledge.active') }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('knowledge.cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ _('knowledge.save') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Knowledge Modal -->
+<div class="modal fade" id="editKnowledgeModal" tabindex="-1" aria-labelledby="editKnowledgeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editKnowledgeModalLabel">{{ _('knowledge.edit') }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form onsubmit="submitEditKnowledge(event)">
+                <input type="hidden" id="edit_knowledge_id" name="knowledge_id">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="edit_title" class="form-label">{{ _('knowledge.title') }} *</label>
+                            <input type="text" class="form-control" id="edit_title" name="title" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_agent_type" class="form-label">{{ _('knowledge.agent_type') }} *</label>
+                            <select class="form-select" id="edit_agent_type" name="agent_type" required>
+                                <option value="">Выберите тип агента</option>
+                                <option value="admission">{{ _('agent.admission') }}</option>
+                                <option value="academic">{{ _('agent.academic') }}</option>
+                                <option value="scholarship">{{ _('agent.scholarship') }}</option>
+                                <option value="student_life">{{ _('agent.student_life') }}</option>
+                                <option value="general">{{ _('agent.general') }}</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="edit_content_ru" class="form-label">{{ _('knowledge.content_ru') }} *</label>
+                            <textarea class="form-control" id="edit_content_ru" name="content_ru" rows="4" required></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="edit_content_kz" class="form-label">{{ _('knowledge.content_kz') }} *</label>
+                            <textarea class="form-control" id="edit_content_kz" name="content_kz" rows="4" required></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="edit_content_en" class="form-label">Content (English)</label>
+                            <textarea class="form-control" id="edit_content_en" name="content_en" rows="4"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="edit_keywords" class="form-label">{{ _('knowledge.keywords') }}</label>
+                            <input type="text" class="form-control" id="edit_keywords" name="keywords" placeholder="ключевые слова, через запятую">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="edit_priority" class="form-label">{{ _('knowledge.priority') }}</label>
+                            <select class="form-select" id="edit_priority" name="priority">
+                                <option value="1">Высокий (1)</option>
+                                <option value="2">Средний (2)</option>
+                                <option value="3">Низкий (3)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="edit_category" class="form-label">Категория</label>
+                            <input type="text" class="form-control" id="edit_category" name="category">
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="edit_is_featured" name="is_featured">
+                                <label class="form-check-label" for="edit_is_featured">
+                                    Рекомендуемое
+                                </label>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active">
+                                <label class="form-check-label" for="edit_is_active">
+                                    {{ _('knowledge.active') }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('knowledge.cancel') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ _('knowledge.save') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Фильтр записей</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Тип агента</label>
+                    <select class="form-select" id="filterAgentType">
+                        <option value="">Все агенты</option>
+                        <option value="admission">{{ _('agent.admission') }}</option>
+                        <option value="scholarship">{{ _('agent.scholarship') }}</option>
+                        <option value="academic">{{ _('agent.academic') }}</option>
+                        <option value="student_life">{{ _('agent.student_life') }}</option>
+                        <option value="general">{{ _('agent.general') }}</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Статус</label>
+                    <select class="form-select" id="filterStatus">
+                        <option value="">Все</option>
+                        <option value="active">Только активные</option>
+                        <option value="inactive">Только неактивные</option>
+                        <option value="featured">Только рекомендуемые</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Приоритет</label>
+                    <select class="form-select" id="filterPriority">
+                        <option value="">Все</option>
+                        <option value="1">Высокий (1)</option>
+                        <option value="2">Средний (2)</option>
+                        <option value="3">Низкий (3)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">Сброс</button>
+                <button type="button" class="btn btn-primary" onclick="applyFilters()" data-bs-dismiss="modal">Применить</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function submitKnowledge(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = {};
+
+    for (let [key, value] of formData.entries()) {
+        if (key === 'is_featured' || key === 'is_active') {
+            data[key] = form.elements[key].checked;
+        } else {
+            data[key] = value;
+        }
+    }
+
+    BolashakChat.setButtonLoading(form.querySelector('button[type="submit"]'), true);
+
+    fetch('/admin/api/knowledge', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            BolashakChat.showNotification('{{ _("form.success_save") }}', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('addKnowledgeModal')).hide();
+            form.reset();
+            location.reload();
+        } else {
+            BolashakChat.showNotification(result.error || '{{ _("form.error_save") }}', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        BolashakChat.showNotification('{{ _("form.error_save") }}', 'danger');
+    })
+    .finally(() => {
+        BolashakChat.setButtonLoading(form.querySelector('button[type="submit"]'), false);
+    });
+}
+
+function updateKnowledge(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const knowledgeId = formData.get('knowledge_id');
+    
+    const data = {
+        title: formData.get('title'),
+        agent_type: formData.get('agent_type'),
+        content_ru: formData.get('content_ru'),
+        content_kz: formData.get('content_kz'),
+        content_en: formData.get('content_en'),
+        keywords: formData.get('keywords'),
+        priority: formData.get('priority'),
+        category: formData.get('category'),
+        is_featured: formData.has('is_featured'),
+        is_active: formData.has('is_active')
+    };
+
+    BolashakChat.setButtonLoading(form.querySelector('button[type="submit"]'), true);
+
+    fetch(`/admin/api/knowledge/${knowledgeId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            BolashakChat.showNotification('{{ _("form.success_save") }}', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editKnowledgeModal')).hide();
+            location.reload();
+        } else {
+            BolashakChat.showNotification(result.error || '{{ _("form.error_save") }}', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        BolashakChat.showNotification('{{ _("form.error_save") }}', 'danger');
+    })
+    .finally(() => {
+        BolashakChat.setButtonLoading(form.querySelector('button[type="submit"]'), false);
+    });
+}
+
+function editKnowledge(id) {
+    fetch(`/admin/api/knowledge/${id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('edit_knowledge_id').value = data.id || '';
+                document.getElementById('edit_title').value = data.title || '';
+                document.getElementById('edit_agent_type').value = data.agent_type || '';
+                document.getElementById('edit_content_ru').value = data.content_ru || '';
+                document.getElementById('edit_content_kz').value = data.content_kz || '';
+                document.getElementById('edit_content_en').value = data.content_en || '';
+                document.getElementById('edit_keywords').value = data.keywords || '';
+                document.getElementById('edit_priority').value = data.priority || 1;
+                document.getElementById('edit_category').value = data.category || '';
+                document.getElementById('edit_is_featured').checked = data.is_featured || false;
+                document.getElementById('edit_is_active').checked = data.is_active || true;
+
+                new bootstrap.Modal(document.getElementById('editKnowledgeModal')).show();
+            } else {
+                BolashakChat.showNotification(data.error || 'Ошибка загрузки данных', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            BolashakChat.showNotification('Ошибка загрузки данных', 'danger');
+        });ch(error => {
+            console.error('Error fetching knowledge:', error);
+            BolashakChat.showNotification('Не удалось загрузить данные для редактирования', 'danger');
+        });
+}
+
+function submitEditKnowledge(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = {};
+    const knowledgeId = document.getElementById('edit_knowledge_id').value;
+
+    for (let [key, value] of formData.entries()) {
+        if (key === 'is_featured' || key === 'is_active') {
+            data[key] = form.elements[key].checked;
+        } else {
+            data[key] = value;
+        }
+    }
+
+    BolashakChat.setButtonLoading(form.querySelector('button[type="submit"]'), true);
+
+    fetch(`/admin/api/knowledge/${knowledgeId}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            BolashakChat.showNotification('{{ _("form.success_save") }}', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editKnowledgeModal')).hide();
+            location.reload();
+        } else {
+            BolashakChat.showNotification(result.error || '{{ _("form.error_save") }}', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        BolashakChat.showNotification('{{ _("form.error_save") }}', 'danger');
+    })
+    .finally(() => {
+        BolashakChat.setButtonLoading(form.querySelector('button[type="submit"]'), false);
+    });
+}
+
+
+function toggleFeatured(id) {
+    fetch(`/admin/api/knowledge/${id}/toggle-featured`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            BolashakChat.showNotification('Статус обновлен', 'success');
+            location.reload();
+        } else {
+            BolashakChat.showNotification(result.error || 'Ошибка обновления', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        BolashakChat.showNotification('Ошибка обновления', 'danger');
+    });
+}
+
+function toggleActive(id) {
+    fetch(`/admin/api/knowledge/${id}/toggle-active`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            BolashakChat.showNotification('Статус обновлен', 'success');
+            location.reload();
+        } else {
+            BolashakChat.showNotification(result.error || 'Ошибка обновления', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        BolashakChat.showNotification('Ошибка обновления', 'danger');
+    });
+}
+
+function deleteKnowledge(id) {
+    if (!confirm('{{ _("form.confirm_delete") }}')) {
+        return;
+    }
+
+    fetch(`/admin/api/knowledge/${id}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            BolashakChat.showNotification('{{ _("form.success_delete") }}', 'success');
+            location.reload();
+        } else {
+            BolashakChat.showNotification(result.error || '{{ _("form.error_delete") }}', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        BolashakChat.showNotification('{{ _("form.error_delete") }}', 'danger');
+    });
+}
+
+function applyFilters() {
+    const agentType = document.getElementById('filterAgentType').value;
+    const status = document.getElementById('filterStatus').value;
+    const priority = document.getElementById('filterPriority').value;
+
+    const params = new URLSearchParams();
+    if (agentType) params.append('agent_type', agentType);
+    if (status) params.append('status', status);
+    if (priority) params.append('priority', priority);
+
+    window.location.search = params.toString();
+}
+
+function clearFilters() {
+    document.getElementById('filterAgentType').value = '';
+    document.getElementById('filterStatus').value = '';
+    document.getElementById('filterPriority').value = '';
+}
+</script>
+{% endblock %}

@@ -1,0 +1,104 @@
+{
+  "app": {
+    "title": "АІ-SANA",
+    "subtitle": "University AI Assistant",
+    "welcome": "Welcome to the Student Support System",
+    "description": "Intelligent assistant for students and applicants of Bolashak University"
+  },
+  "navigation": {
+    "home": "Home",
+    "chat": "Chat",
+    "about": "About",
+    "help": "Help",
+    "admin": "Administration",
+    "language": "Language",
+    "contact": "Contact"
+  },
+  "chat": {
+    "title": "Chat with AI Assistant",
+    "placeholder": "Enter your question...",
+    "send": "Send",
+    "clear": "Clear",
+    "voice": "Voice Input",
+    "typing": "Typing...",
+    "connecting": "Connecting...",
+    "error": "Connection error",
+    "retry": "Try again"
+  },
+  "agent": {
+    "admission": "AI-Abitur",
+    "scholarship": "KadrAI",
+    "academic": "UniNav",
+    "student_life": "UniRoom",
+    "general": "CareerNavigator"
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "dashboard": "Dashboard",
+    "categories": "Categories",
+    "faqs": "Frequently Asked Questions",
+    "knowledge": "Knowledge Base",
+    "agent_knowledge": "Agent Knowledge",
+    "users": "Users",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "logout": "Logout",
+    "login": "Login",
+    "username": "Username",
+    "password": "Password",
+    "email": "Email"
+  },
+  "knowledge": {
+    "title": "Knowledge Base",
+    "add_new": "Add New Entry",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "content_ru": "Content (Russian)",
+    "content_kz": "Content (Kazakh)",
+    "keywords": "Keywords",
+    "priority": "Priority",
+    "agent_type": "Agent Type",
+    "active": "Active",
+    "created": "Created",
+    "updated": "Updated"
+  },
+  "form": {
+    "required": "Required field",
+    "invalid_email": "Invalid email format",
+    "password_too_short": "Password too short",
+    "confirm_delete": "Are you sure you want to delete?",
+    "success_save": "Successfully saved",
+    "error_save": "Error saving",
+    "success_delete": "Successfully deleted",
+    "error_delete": "Error deleting"
+  },
+  "messages": {
+    "welcome_message": "Hello! I'm your virtual assistant for Bolashak University. Ask me any question about admission, studies, or student life.",
+    "error_message": "Sorry, an error occurred. Please try again or contact the administrator.",
+    "no_results": "No results found for your query. Try rephrasing your question.",
+    "agent_switched": "Switched to agent: {agent_name}"
+  },
+  "features": {
+    "multilingual": "Multilingual Support",
+    "multilingual_desc": "Support for Russian, Kazakh, and English languages",
+    "ai_powered": "AI-Powered",
+    "ai_powered_desc": "Modern machine learning algorithms",
+    "specialized_agents": "Specialized Agents",
+    "specialized_agents_desc": "Separate agents for different topics and directions",
+    "knowledge_base": "Knowledge Base",
+    "knowledge_base_desc": "Extensive university knowledge base",
+    "realtime": "Real-time",
+    "realtime_desc": "Instant answers to your questions",
+    "voice_support": "Voice Support",
+    "voice_support_desc": "Voice input capability for questions"
+  },
+  "footer": {
+    "university": "Bolashak University",
+    "address": "Kyzylorda, Levy Bereg microdistrict, 111",
+    "phone": "+7 (7242) 123-456",
+    "email": "info@bolashak.kz",
+    "copyright": "© 2025 Bolashak University. All rights reserved."
+  }
+}

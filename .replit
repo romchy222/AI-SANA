@@ -1,0 +1,27 @@
+modules = ["python-3.11", "postgresql-16"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["antiword", "cargo", "libiconv", "libxcrypt", "openssl", "pkg-config", "postgresql", "pyflyby", "rustc"]
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["gunicorn", "--bind", "0.0.0.0:5000", "main:app"]
+
+[workflows]
+
+[[workflows.workflow]]
+name = "Start App"
+mode = "sequential"
+author = 45595368
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
+
+[agent]
+integrations = ["python_database==1.0.0", "web_scraper==1.0.0"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80

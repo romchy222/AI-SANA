@@ -1,0 +1,202 @@
+{% extends "base_new.html" %}
+
+{% block title %}База знаний - BolashakBot{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-database me-2"></i>База знаний</h1>
+        <div>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Назад
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Всего фрагментов</h5>
+                            <h2>{{ stats.total or 0 }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-database fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Из документов</h5>
+                            <h2>{{ stats.documents or 0 }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-file-text fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">Из веб-сайтов</h5>
+                            <h2>{{ stats.web or 0 }}</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-globe fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-6">
+                    <label for="source_type" class="form-label">Тип источника</label>
+                    <select name="source_type" id="source_type" class="form-select" onchange="this.form.submit()">
+                        <option value="">Все источники</option>
+                        <option value="document" {% if selected_source_type == 'document' %}selected{% endif %}>Документы</option>
+                        <option value="web" {% if selected_source_type == 'web' %}selected{% endif %}>Веб-сайты</option>
+                        <option value="manual" {% if selected_source_type == 'manual' %}selected{% endif %}>Ручной ввод</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Knowledge Base Entries -->
+    <div class="card">
+        <div class="card-body">
+            {% if entries and entries.items %}
+                {% for entry in entries.items %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-10">
+                                <div class="d-flex align-items-center mb-2">
+                                    {% if entry.source_type == 'document' %}
+                                        <span class="badge bg-success me-2">
+                                            <i class="fas fa-file-text me-1"></i>Документ
+                                        </span>
+                                    {% elif entry.source_type == 'web' %}
+                                        <span class="badge bg-info me-2">
+                                            <i class="fas fa-globe me-1"></i>Веб-сайт
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary me-2">
+                                            <i class="fas fa-edit me-1"></i>Ручной ввод
+                                        </span>
+                                    {% endif %}
+                                    <small class="text-muted">ID: {{ entry.id }}</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <p class="mb-1">{{ entry.content_chunk }}</p>
+                                </div>
+                                
+                                {% if entry.extra_data %}
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <strong>Метаданные:</strong>
+                                        {% if entry.extra_data.chunk_index is not none %}
+                                            Фрагмент {{ entry.extra_data.chunk_index + 1 }} из {{ entry.extra_data.total_chunks }}
+                                        {% endif %}
+                                        {% if entry.extra_data.url %}
+                                            | URL: {{ entry.extra_data.url }}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-2">
+                                <div class="d-flex flex-column gap-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ entry.created_at.strftime('%d.%m.%Y') }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ entry.created_at.strftime('%H:%M') }}
+                                    </small>
+                                    {% if entry.source_id %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-link me-1"></i>
+                                        Источник: {{ entry.source_id }}
+                                    </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if entries.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if entries.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.knowledge_base', page=entries.prev_num, source_type=selected_source_type) }}">Предыдущая</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in entries.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != entries.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.knowledge_base', page=page_num, source_type=selected_source_type) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if entries.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.knowledge_base', page=entries.next_num, source_type=selected_source_type) }}">Следующая</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-database fa-3x mb-3"></i>
+                    <p>База знаний пуста. Загрузите документы или добавьте веб-источники для наполнения базы знаний.</p>
+                    <div class="mt-3">
+                        <a href="{{ url_for('admin.documents') }}" class="btn btn-primary me-2">
+                            <i class="fas fa-file-text me-1"></i>Загрузить документы
+                        </a>
+                        <a href="{{ url_for('admin.web_sources') }}" class="btn btn-info">
+                            <i class="fas fa-globe me-1"></i>Добавить веб-источники
+                        </a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

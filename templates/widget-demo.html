@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Демо интеграции BolashakBot Widget</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .hero-section {
+            padding: 100px 0;
+            text-align: center;
+            color: white;
+        }
+        
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .hero-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .demo-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            color: #333;
+            margin: 30px 0;
+        }
+        
+        .integration-code {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            margin: 20px 0;
+            position: relative;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4a5568;
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .copy-button:hover {
+            background: #2d3748;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .feature-item {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+        
+        .widget-preview {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        
+        .notice {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 5px 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <div class="container">
+                <h1 class="hero-title">
+                    <i class="fas fa-robot me-3"></i>
+                    BolashakBot Widget
+                </h1>
+                <p class="hero-subtitle">
+                    Умный помощник для студентов вашего университета
+                </p>
+                <div class="notice" style="background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.3); color: white;">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Попробуйте прямо сейчас!</strong> Виджет уже активен в правом нижнем углу страницы.
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Content -->
+        <div class="container">
+            <div class="demo-card">
+                <h2><i class="fas fa-code me-2 text-primary"></i>Интеграция на ваш сайт</h2>
+                <p>Добавьте всего одну строку кода перед закрывающим тегом <code>&lt;/body&gt;</code>:</p>
+                
+                <div class="integration-code">
+                    <button class="copy-button" onclick="copyToClipboard('integration-code')">
+                        <i class="fas fa-copy me-1"></i>Копировать
+                    </button>
+                    <pre id="integration-code"><!-- BolashakBot Widget -->
+&lt;script&gt;
+    window.BOLASHAK_API_URL = 'https://{{ request.host }}';
+&lt;/script&gt;
+&lt;script src="https://{{ request.host }}/static/js/bolashak-widget.js"&gt;&lt;/script&gt;</pre>
+                </div>
+
+                <div class="notice">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Настройка:</strong> Замените <code>https://{{ request.host }}</code> на адрес вашего развернутого BolashakBot.
+                </div>
+            </div>
+
+            <div class="demo-card">
+                <h2><i class="fas fa-cogs me-2 text-success"></i>Возможности виджета</h2>
+                
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h5>Интеллектуальные ответы</h5>
+                        <p>ИИ-помощник отвечает на вопросы на основе данных вашего университета</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-language"></i>
+                        </div>
+                        <h5>Билингвальность</h5>
+                        <p>Поддержка русского и казахского языков для всех студентов</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h5>Адаптивный дизайн</h5>
+                        <p>Отлично работает на всех устройствах - от телефонов до десктопов</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <h5>База знаний</h5>
+                        <p>Использует FAQ, документы и веб-контент для точных ответов</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h5>Быстрая загрузка</h5>
+                        <p>Легкий виджет, не замедляющий работу сайта</p>
+                    </div>
+                    
+                    <div class="feature-item">
+                        <div class="feature-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h5>Безопасность</h5>
+                        <p>Защищенная передача данных и конфиденциальность пользователей</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-card">
+                <h2><i class="fas fa-palette me-2 text-success"></i>Дизайн виджета</h2>
+                <p>Виджет разработан в соответствии с минималистичным стилем университета:</p>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-check-circle text-success me-2"></i>Соответствует стилю</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">✓ Белый фон с чистым макетом</li>
+                            <li class="mb-2">✓ Серые цвета вместо ярких акцентов</li>
+                            <li class="mb-2">✓ Минималистичные иконки</li>
+                            <li class="mb-2">✓ Лаконичный интерфейс</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-mobile-alt text-info me-2"></i>Адаптивность</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">✓ Работает на всех устройствах</li>
+                            <li class="mb-2">✓ Поддержка слабовидящих</li>
+                            <li class="mb-2">✓ Высокий контраст текста</li>
+                            <li class="mb-2">✓ Крупные кнопки для касания</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-card">
+                <h2><i class="fas fa-wrench me-2 text-warning"></i>Дополнительные настройки</h2>
+                <p>Вы можете настроить виджет под дизайн вашего сайта:</p>
+                
+                <div class="integration-code">
+                    <button class="copy-button" onclick="copyToClipboard('config-code')">
+                        <i class="fas fa-copy me-1"></i>Копировать
+                    </button>
+                    <pre id="config-code">&lt;script&gt;
+    // Настройка виджета перед загрузкой
+    window.BOLASHAK_API_URL = 'https://{{ request.host }}';
+    window.BOLASHAK_WIDGET_CONFIG = {
+        position: 'bottom-right', // bottom-right, bottom-left
+        language: 'ru',           // ru, kz
+        theme: 'dark',           // dark, light
+        title: 'Помощник Болашак',
+        welcomeMessage: 'Здравствуйте! Чем могу помочь?'
+    };
+&lt;/script&gt;
+&lt;script src="https://{{ request.host }}/static/js/bolashak-widget.js"&gt;&lt;/script&gt;</pre>
+                </div>
+            </div>
+
+            <div class="demo-card">
+                <h2><i class="fas fa-question-circle me-2 text-info"></i>Примеры вопросов</h2>
+                <p>Студенты могут задавать такие вопросы:</p>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-comment text-primary me-2"></i>"Когда крайний срок подачи документов?"</li>
+                            <li class="mb-2"><i class="fas fa-comment text-primary me-2"></i>"Какие документы нужны для поступления?"</li>
+                            <li class="mb-2"><i class="fas fa-comment text-primary me-2"></i>"Сколько стоит обучение?"</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-comment text-success me-2"></i>"Какие специальности доступны?"</li>
+                            <li class="mb-2"><i class="fas fa-comment text-success me-2"></i>"Как подать заявление онлайн?"</li>
+                            <li class="mb-2"><i class="fas fa-comment text-success me-2"></i>"Где находится университет?"</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-card text-center">
+                <h2><i class="fas fa-rocket me-2 text-danger"></i>Готовы к запуску?</h2>
+                <p class="lead">Скопируйте код интеграции и добавьте на ваш сайт уже сегодня!</p>
+                <a href="{{ url_for('admin.login') }}" class="btn btn-primary btn-lg me-3">
+                    <i class="fas fa-cog me-2"></i>Админ-панель
+                </a>
+                <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-home me-2"></i>Главная страница
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Widget Integration -->
+    <script>
+        window.BOLASHAK_API_URL = 'https://{{ request.host }}';
+    </script>
+    <script src="{{ url_for('static', filename='js/bolashak-widget.js') }}"></script>
+    
+    <script>
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const button = element.parentElement.querySelector('.copy-button');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check me-1"></i>Скопировано!';
+                button.style.background = '#38a169';
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.style.background = '#4a5568';
+                }, 2000);
+            }).catch(() => {
+                alert('Не удалось скопировать. Пожалуйста, выделите текст вручную.');
+            });
+        }
+    </script>
+</body>
+</html>

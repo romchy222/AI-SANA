@@ -1,0 +1,178 @@
+{% extends "base_new.html" %}
+
+{% block title %}Управление веб-источниками - BolashakBot{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-globe me-2"></i>Управление веб-источниками</h1>
+        <div>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-2"></i>Назад
+            </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addWebSourceModal">
+                <i class="fas fa-plus me-2"></i>Добавить веб-источник
+            </button>
+        </div>
+    </div>
+
+    <!-- Web Sources List -->
+    <div class="card">
+        <div class="card-body">
+            {% if sources and sources.items %}
+                {% for source in sources.items %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="card-title">{{ source.title }}</h5>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-link me-1"></i>
+                                    <a href="{{ source.url }}" target="_blank" rel="noopener noreferrer">{{ source.url }}</a>
+                                </p>
+                                <p class="mb-2">
+                                    <span class="badge bg-info">{{ source.scrape_frequency }}</span>
+                                    {% if source.is_active %}
+                                        <span class="badge bg-success">Активен</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Неактивен</span>
+                                    {% endif %}
+                                </p>
+                                {% if source.content_text %}
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <strong>Содержимое:</strong> 
+                                        {{ source.content_text[:200] }}{% if source.content_text|length > 200 %}...{% endif %}
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex flex-column gap-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        Добавлен: {{ source.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                    </small>
+                                    {% if source.last_scraped %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-sync me-1"></i>
+                                        Обновлен: {{ source.last_scraped.strftime('%d.%m.%Y %H:%M') }}
+                                    </small>
+                                    {% endif %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>
+                                        Автор: {{ source.creator.username }}
+                                    </small>
+                                    <div class="mt-2">
+                                        <form method="POST" action="{{ url_for('admin.update_web_source', source_id=source.id) }}" class="d-inline me-2">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-sync me-1"></i>Обновить
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('admin.delete_web_source', source_id=source.id) }}" 
+                                              onsubmit="return confirm('Вы уверены, что хотите удалить этот веб-источник?')" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash me-1"></i>Удалить
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if sources.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if sources.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.web_sources', page=sources.prev_num) }}">Предыдущая</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in sources.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != sources.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.web_sources', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if sources.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.web_sources', page=sources.next_num) }}">Следующая</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-globe fa-3x mb-3"></i>
+                    <p>Пока нет добавленных веб-источников. Добавьте первый!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Web Source Modal -->
+<div class="modal fade" id="addWebSourceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.add_web_source') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Добавить веб-источник</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Название *</label>
+                        <input type="text" class="form-control" id="title" name="title" required
+                               placeholder="Например: Главная страница университета">
+                    </div>
+                    <div class="mb-3">
+                        <label for="url" class="form-label">URL адрес *</label>
+                        <input type="url" class="form-control" id="url" name="url" required
+                               placeholder="https://example.com">
+                        <div class="form-text">Введите полный URL адрес страницы</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="frequency" class="form-label">Частота обновления</label>
+                        <select class="form-select" id="frequency" name="frequency">
+                            <option value="manual">Вручную</option>
+                            <option value="daily">Ежедневно</option>
+                            <option value="weekly">Еженедельно</option>
+                        </select>
+                        <div class="form-text">Как часто автоматически обновлять содержимое</div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        После добавления содержимое страницы будет загружено и обработано.
+                        ИИ-ассистент сможет использовать эту информацию для ответов.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Добавить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

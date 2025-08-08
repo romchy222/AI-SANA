@@ -1,0 +1,126 @@
+{% extends "base_new.html" %}
+
+{% block title %}Запросы пользователей - BolashakBot{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-comments me-2"></i>Запросы пользователей</h1>
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Назад
+        </a>
+    </div>
+
+    <!-- Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label for="language_filter" class="form-label">Фильтр по языку</label>
+                    <select name="language" id="language_filter" class="form-select" onchange="this.form.submit()">
+                        <option value="">Все языки</option>
+                        <option value="ru" {% if selected_language == 'ru' %}selected{% endif %}>Русский</option>
+                        <option value="kz" {% if selected_language == 'kz' %}selected{% endif %}>Казахский</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Queries List -->
+    <div class="card">
+        <div class="card-body">
+            {% if queries and queries.items %}
+                {% for query in queries.items %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <strong class="text-primary">Сообщение пользователя:</strong>
+                                    <p class="mb-2">{{ query.user_message }}</p>
+                                </div>
+                                <div class="mb-3">
+                                    <strong class="text-success">Ответ бота:</strong>
+                                    <p class="mb-2">{{ query.bot_response }}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex flex-column gap-2">
+                                    <span class="badge bg-{{ 'primary' if query.language == 'ru' else 'success' }}">
+                                        {{ 'Русский' if query.language == 'ru' else 'Казахский' }}
+                                    </span>
+                                    {% if query.response_time %}
+                                    <span class="badge bg-info">
+                                        Время ответа: {{ "%.2f"|format(query.response_time) }}s
+                                    </span>
+                                    {% endif %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>
+                                        {{ query.created_at.strftime('%d.%m.%Y %H:%M:%S') }}
+                                    </small>
+                                    {% if query.ip_address %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-globe me-1"></i>
+                                        IP: {{ query.ip_address }}
+                                    </small>
+                                    {% endif %}
+                                    {% if query.session_id %}
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>
+                                        Сессия: {{ query.session_id[:8] }}...
+                                    </small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if queries.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if queries.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.queries', page=queries.prev_num, language=selected_language) }}">Предыдущая</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for page_num in queries.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != queries.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.queries', page=page_num, language=selected_language) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if queries.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.queries', page=queries.next_num, language=selected_language) }}">Следующая</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                    <p>Пока нет запросов от пользователей</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,169 @@
+{% extends "base_new.html" %}
+
+{% block title %}Управление документами - BolashakBot{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-file-text me-2"></i>Управление документами</h1>
+        <div>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-2"></i>Назад
+            </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">
+                <i class="fas fa-upload me-2"></i>Загрузить документ
+            </button>
+        </div>
+    </div>
+
+    <!-- Documents List -->
+    <div class="card">
+        <div class="card-body">
+            {% if documents and documents.items %}
+                {% for document in documents.items %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h5 class="card-title">{{ document.title }}</h5>
+                                <p class="text-muted mb-2">
+                                    <i class="fas fa-file me-1"></i>{{ document.filename }}
+                                    <span class="ms-3">
+                                        <i class="fas fa-hdd me-1"></i>
+                                        {% if document.file_size is not none %}
+                                            {{ "%.1f"|format(document.file_size / 1024) }} KB
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </span>
+                                </p>
+                                <p class="mb-2">
+                                    <span class="badge bg-secondary">{{ document.file_type }}</span>
+                                    {% if document.is_processed %}
+                                        <span class="badge bg-success">Обработан</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Ожидает обработки</span>
+                                    {% endif %}
+                                </p>
+                                {% if document.content_text %}
+                                <div class="mb-2">
+                                    <small class="text-muted">
+                                        <strong>Содержимое:</strong> 
+                                        {{ document.content_text[:200] }}{% if document.content_text|length > 200 %}...{% endif %}
+                                    </small>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <div class="d-flex flex-column gap-2">
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        Загружен: {{ document.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                    </small>
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>
+                                        Автор: {{ document.uploader.username }}
+                                    </small>
+                                    <div class="mt-2">
+                                        <form method="POST" action="{{ url_for('admin.delete_document', doc_id=document.id) }}" 
+                                              onsubmit="return confirm('Вы уверены, что хотите удалить этот документ?')" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash me-1"></i>Удалить
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if documents.pages > 1 %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if documents.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.documents', page=documents.prev_num) }}">Предыдущая</a>
+                            </li>
+                        {% endif %}
+
+                        {% for page_num in documents.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != documents.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.documents', page=page_num) }}">{{ page_num }}</a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if documents.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.documents', page=documents.next_num) }}">Следующая</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-file-text fa-3x mb-3"></i>
+                    <p>Пока нет загруженных документов. Загрузите первый документ!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Upload Document Modal -->
+<div class="modal fade" id="uploadDocumentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('admin.upload_document') }}" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Загрузить документ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Название документа</label>
+                        <input type="text" class="form-control" id="title" name="title" 
+                               placeholder="Введите название (необязательно)">
+                        <div class="form-text">Если не указано, будет использовано имя файла</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="file" class="form-label">Файл *</label>
+                        <input type="file" class="form-control" id="file" name="file" required
+                               accept=".txt,.pdf,.doc,.docx,.html">
+                        <div class="form-text">
+                            Поддерживаемые форматы: TXT, PDF, DOC, DOCX, HTML<br>
+                            Максимальный размер: 10 МБ
+                        </div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        После загрузки документ будет автоматически обработан и добавлен в базу знаний.
+                        ИИ-ассистент сможет использовать его содержимое для ответов на вопросы.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload me-1"></i>Загрузить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
