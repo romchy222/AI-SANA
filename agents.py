@@ -31,23 +31,53 @@ class BaseAgent(ABC):
 
     def process_message(self, message: str, language: str = "ru") -> Dict[str, Any]:
         try:
+            # Check cache first for performance
+            from response_cache import response_cache
+            
+            cached_response = response_cache.get(message, self.agent_type, language)
+            if cached_response:
+                logger.info(f"Returning cached response for {self.name}")
+                return {
+                    **cached_response,
+                    'cached': True
+                }
+            
             # Get agent-specific system prompt
             system_prompt = self.get_system_prompt(language)
             
             # Get agent-specific context from knowledge base
             context = self.get_agent_context(message, language)
             
+            # Calculate context confidence for overall response confidence
+            context_confidence = self._assess_context_confidence(context, message)
+            
             # Use agent-specific system prompt for this message
             response = self.mistral.get_response_with_system_prompt(
                 message, context, language, system_prompt
             )
-            return {
+            
+            # Calculate overall confidence based on agent matching and context quality
+            base_confidence = self.can_handle(message, language)
+            overall_confidence = self._calculate_overall_confidence(
+                base_confidence, context_confidence, bool(context)
+            )
+            
+            response_data = {
                 'response': response,
-                'confidence': self.can_handle(message, language),
+                'confidence': overall_confidence,
                 'agent_type': self.agent_type,
                 'agent_name': self.name,
-                'context_used': bool(context)
+                'context_used': bool(context),
+                'context_confidence': context_confidence,
+                'cached': False
             }
+            
+            # Cache successful responses
+            if response_cache.should_cache(message, response_data):
+                response_cache.set(message, self.agent_type, response_data, language)
+                
+            return response_data
+            
         except Exception as e:
             logger.error(f"Error in {self.name} agent: {str(e)}")
             return {
@@ -55,14 +85,66 @@ class BaseAgent(ABC):
                 'confidence': 0.1,
                 'agent_type': self.agent_type,
                 'agent_name': self.name,
-                'context_used': False
+                'context_used': False,
+                'context_confidence': 0.0,
+                'cached': False
             }
     
+    def _assess_context_confidence(self, context: str, message: str) -> float:
+        """Assess confidence in the retrieved context"""
+        if not context:
+            return 0.0
+            
+        # Simple heuristics for context confidence
+        message_words = set(message.lower().split())
+        context_words = set(context.lower().split())
+        
+        # Word overlap ratio
+        if message_words:
+            overlap = len(message_words.intersection(context_words))
+            word_confidence = overlap / len(message_words)
+        else:
+            word_confidence = 0.0
+            
+        # Context length confidence (more content usually means better info)
+        length_confidence = min(1.0, len(context) / 1000)  # Normalize to 1000 chars
+        
+        # Structure confidence (well-formatted content is usually better)
+        structure_indicators = ['**', '###', '\n-', '\n•', '1.', '2.']
+        structure_score = sum(1 for indicator in structure_indicators if indicator in context)
+        structure_confidence = min(1.0, structure_score * 0.2)
+        
+        # Weighted average
+        return (word_confidence * 0.5 + length_confidence * 0.3 + structure_confidence * 0.2)
+    
+    def _calculate_overall_confidence(self, agent_confidence: float, context_confidence: float, 
+                                    has_context: bool) -> float:
+        """Calculate overall response confidence"""
+        if not has_context:
+            # No context available, rely mainly on agent confidence
+            return agent_confidence * 0.8  # Reduce confidence when no context
+            
+        # Combine agent and context confidence
+        # Agent confidence shows how well this agent can handle the query type
+        # Context confidence shows how relevant the retrieved information is
+        combined_confidence = (agent_confidence * 0.6 + context_confidence * 0.4)
+        
+        # Boost confidence if both are high
+        if agent_confidence > 0.8 and context_confidence > 0.7:
+            combined_confidence = min(1.0, combined_confidence * 1.1)
+            
+        # Reduce confidence if context is poor even with good agent match
+        if context_confidence < 0.3:
+            combined_confidence *= 0.8
+            
+        return min(1.0, max(0.1, combined_confidence))
+    
     def get_agent_context(self, message: str, language: str = "ru") -> str:
-        """Get agent-specific context from knowledge base"""
+        """Get agent-specific context from knowledge base using enhanced search"""
         try:
             from models import AgentKnowledgeBase
             from app import db
+            from knowledge_search import knowledge_search_engine
             
             # Search for relevant knowledge entries for this agent
             knowledge_entries = AgentKnowledgeBase.query.filter_by(
@@ -73,27 +155,27 @@ class BaseAgent(ABC):
             if not knowledge_entries:
                 return ""
             
-            # Build context from relevant entries
+            # Use enhanced search engine for better relevance
+            search_results = knowledge_search_engine.search_knowledge_base(
+                query=message,
+                knowledge_entries=knowledge_entries,
+                language=language,
+                max_results=3,
+                min_score=0.1
+            )
+            
+            # If enhanced search finds relevant results, use them
+            if search_results:
+                return knowledge_search_engine.format_context(search_results, max_length=1500)
+            
+            # Fallback to original simple method if no results from enhanced search
+            logger.info(f"Enhanced search found no results for '{message}', using fallback")
+            
+            # Build context from high-priority entries as fallback
             context_parts = []
-            message_lower = message.lower()
-            
-            for entry in knowledge_entries:
-                # Check if keywords match the message
-                if entry.keywords:
-                    keywords = [k.strip().lower() for k in entry.keywords.split(',')]
-                    if any(keyword in message_lower for keyword in keywords):
-                        content = entry.content_ru if language == 'ru' else entry.content_kz
-                        context_parts.append(f"**{entry.title}**\n{content}")
-                        
-                        # Limit context to prevent too long prompts
-                        if len(context_parts) >= 3:
-                            break
-            
-            # If no keyword matches, include high-priority general entries
-            if not context_parts:
-                for entry in knowledge_entries[:2]:  # Top 2 priority entries
-                    content = entry.content_ru if language == 'ru' else entry.content_kz
-                    context_parts.append(f"**{entry.title}**\n{content}")
+            for entry in knowledge_entries[:2]:  # Top 2 priority entries
+                content = entry.content_ru if language == 'ru' else entry.content_kz
+                context_parts.append(f"**{entry.title}**\n{content}")
             
             return "\n\n".join(context_parts)
             
