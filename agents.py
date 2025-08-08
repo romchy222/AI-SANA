@@ -142,46 +142,74 @@ class BaseAgent(ABC):
     def get_agent_context(self, message: str, language: str = "ru") -> str:
         """Get agent-specific context from knowledge base using enhanced search"""
         try:
-            from models import AgentKnowledgeBase
-            from app import db
-            from knowledge_search import knowledge_search_engine
+            # Import models with error handling
+            try:
+                from models import AgentKnowledgeBase
+                from app import db
+                from knowledge_search import knowledge_search_engine
+            except ImportError as ie:
+                logger.warning(f"Could not import required modules: {ie}")
+                return self._get_fallback_context(message, language)
             
             # Search for relevant knowledge entries for this agent
-            knowledge_entries = AgentKnowledgeBase.query.filter_by(
-                agent_type=self.agent_type,
-                is_active=True
-            ).order_by(AgentKnowledgeBase.priority.asc()).all()
+            try:
+                knowledge_entries = AgentKnowledgeBase.query.filter_by(
+                    agent_type=self.agent_type,
+                    is_active=True
+                ).order_by(AgentKnowledgeBase.priority.asc()).all()
+            except Exception as db_error:
+                logger.warning(f"Database query failed: {db_error}")
+                return self._get_fallback_context(message, language)
             
             if not knowledge_entries:
-                return ""
+                logger.info(f"No knowledge entries found for agent type: {self.agent_type}")
+                return self._get_fallback_context(message, language)
             
             # Use enhanced search engine for better relevance
-            search_results = knowledge_search_engine.search_knowledge_base(
-                query=message,
-                knowledge_entries=knowledge_entries,
-                language=language,
-                max_results=3,
-                min_score=0.1
-            )
+            try:
+                search_results = knowledge_search_engine.search_knowledge_base(
+                    query=message,
+                    knowledge_entries=knowledge_entries,
+                    language=language,
+                    max_results=3,
+                    min_score=0.1
+                )
+                
+                # If enhanced search finds relevant results, use them
+                if search_results:
+                    context = knowledge_search_engine.format_context(search_results, max_length=1500)
+                    logger.info(f"Found {len(search_results)} relevant knowledge entries for '{message[:50]}...'")
+                    return context
+            except Exception as search_error:
+                logger.warning(f"Enhanced search failed: {search_error}")
             
-            # If enhanced search finds relevant results, use them
-            if search_results:
-                return knowledge_search_engine.format_context(search_results, max_length=1500)
-            
-            # Fallback to original simple method if no results from enhanced search
-            logger.info(f"Enhanced search found no results for '{message}', using fallback")
+            # Fallback to simple method if enhanced search fails
+            logger.info(f"Using fallback search for '{message[:50]}...'")
             
             # Build context from high-priority entries as fallback
             context_parts = []
             for entry in knowledge_entries[:2]:  # Top 2 priority entries
                 content = entry.content_ru if language == 'ru' else entry.content_kz
-                context_parts.append(f"**{entry.title}**\n{content}")
+                if content and content.strip():
+                    context_parts.append(f"**{entry.title}**\n{content}")
             
-            return "\n\n".join(context_parts)
+            fallback_context = "\n\n".join(context_parts) if context_parts else ""
+            if fallback_context:
+                logger.info(f"Using {len(context_parts)} fallback knowledge entries")
+                return fallback_context
+            else:
+                logger.info("No usable knowledge entries found, using agent fallback")
+                return self._get_fallback_context(message, language)
             
         except Exception as e:
-            logger.error(f"Error getting agent context: {str(e)}")
-            return ""
+            logger.error(f"Error getting agent context for {self.agent_type}: {str(e)}")
+            return self._get_fallback_context(message, language)
+
+    def _get_fallback_context(self, message: str, language: str = "ru") -> str:
+        """Provide fallback context when knowledge base is unavailable"""
+        # This method should be implemented by each agent to provide basic context
+        # when the knowledge base is not available
+        return ""
 
 class AIAbiturAgent(BaseAgent):
     def __init__(self):
@@ -218,6 +246,35 @@ class AIAbiturAgent(BaseAgent):
 Ваши ответы должны быть конкретными, полезными и поддерживающими. Используйте формат Markdown.
 """
 
+    def _get_fallback_context(self, message: str, language: str = "ru") -> str:
+        """Provide basic admission context when knowledge base is unavailable"""
+        if language == "kz":
+            return """**Қызылорда "Болашақ" университетіне түсу**
+
+Негізгі ақпарат:
+- Қабылдау комиссиясы: +7 (7242) 123-457
+- Email: admission@bolashak.kz
+- Мекен-жайы: г. Кызылорда, ул. Университетская, 1
+
+Түсу үшін қажетті құжаттар:
+- Мектеп аттестаты
+- Денсаулық туралы анықтама
+- Фотосуреттер (3x4)
+- Жеке куәлік көшірмесі"""
+        
+        return """**Поступление в Кызылординский университет "Болашак"**
+
+Основная информация:
+- Приёмная комиссия: +7 (7242) 123-457
+- Email: admission@bolashak.kz
+- Адрес: г. Кызылорда, ул. Университетская, 1
+
+Документы для поступления:
+- Аттестат о среднем образовании
+- Справка о состоянии здоровья
+- Фотографии 3x4
+- Копия удостоверения личности"""
+
 class KadrAIAgent(BaseAgent):
     def __init__(self):
         super().__init__(
@@ -250,6 +307,35 @@ class KadrAIAgent(BaseAgent):
 
 Ваши ответы должны быть профессиональными, конкретными и полезными. Используйте формат Markdown.
 """
+
+    def _get_fallback_context(self, message: str, language: str = "ru") -> str:
+        """Provide basic HR context when knowledge base is unavailable"""
+        if language == "kz":
+            return """**Кадр қызметі ақпараты**
+
+Кадр бөлімі байланысы:
+- Телефон: +7 (7242) 123-458
+- Email: info@bolashak.kz
+- Жұмыс уақыты: Дс-Жм 9:00-18:00
+
+Негізгі кадр мәселелері:
+- Демалыс рәсімдеу
+- Ауысу және тағайындау
+- Жалақы мәселелері
+- Құжаттама"""
+        
+        return """**Информация отдела кадров**
+
+Контакты отдела кадров:
+- Телефон: +7 (7242) 123-458
+- Email: info@bolashak.kz
+- Время работы: Пн-Пт 9:00-18:00
+
+Основные кадровые вопросы:
+- Оформление отпусков
+- Переводы и назначения
+- Вопросы заработной платы
+- Документооборот"""
 
 class UniNavAgent(BaseAgent):
     def __init__(self):
@@ -284,6 +370,35 @@ class UniNavAgent(BaseAgent):
 Ваши ответы должны быть конкретными и содержать пошаговые инструкции. Используйте формат Markdown.
 """
 
+    def _get_fallback_context(self, message: str, language: str = "ru") -> str:
+        """Provide basic student navigation context when knowledge base is unavailable"""
+        if language == "kz":
+            return """**Студенттерге арналған ақпарат**
+
+Деканаттар:
+- Телефон: +7 (7242) 123-458
+- Email: student@bolashak.kz
+- Жұмыс уақыты: Дс-Жм 9:00-18:00
+
+Негізгі студенттік қызметтер:
+- Сабақ кестесі
+- Академиялық анықтамалар
+- Өтініш беру
+- Емтихан мәселелері"""
+        
+        return """**Информация для студентов**
+
+Деканаты:
+- Телефон: +7 (7242) 123-458  
+- Email: student@bolashak.kz
+- Время работы: Пн-Пт 9:00-18:00
+
+Основные студенческие услуги:
+- Расписание занятий
+- Академические справки
+- Подача заявлений
+- Вопросы экзаменов"""
+
 class CareerNavigatorAgent(BaseAgent):
     def __init__(self):
         super().__init__(
@@ -317,6 +432,35 @@ class CareerNavigatorAgent(BaseAgent):
 Ваши ответы должны быть практичными и ориентированными на результат. Используйте формат Markdown.
 """
 
+    def _get_fallback_context(self, message: str, language: str = "ru") -> str:
+        """Provide basic career guidance context when knowledge base is unavailable"""
+        if language == "kz":
+            return """**Мансап дамыту қызметі**
+
+Байланыс:
+- Телефон: +7 (7242) 123-456 
+- Email: info@bolashak.kz
+- Жұмыс уақыты: Дс-Жм 9:00-18:00
+
+Қызметтер:
+- Жұмыс орындарын іздеу
+- Резюме дайындау
+- Мансап кеңесі
+- Тәжірибе орындары"""
+        
+        return """**Служба развития карьеры**
+
+Контакты:
+- Телефон: +7 (7242) 123-456
+- Email: info@bolashak.kz
+- Время работы: Пн-Пт 9:00-18:00
+
+Услуги:
+- Поиск вакансий
+- Подготовка резюме
+- Карьерное консультирование
+- Стажировки"""
+
 class UniRoomAgent(BaseAgent):
     def __init__(self):
         super().__init__(
@@ -349,6 +493,35 @@ class UniRoomAgent(BaseAgent):
 
 Ваши ответы должны проявлять сочувствие и понимание. Используйте формат Markdown.
 """
+
+    def _get_fallback_context(self, message: str, language: str = "ru") -> str:
+        """Provide basic dormitory context when knowledge base is unavailable"""
+        if language == "kz":
+            return """**Жатақхана ақпараты**
+
+Жатақхана әкімшілігі:
+- Телефон: +7 (7242) 123-459
+- Email: info@bolashak.kz  
+- Жұмыс уақыты: Дс-Жм 9:00-18:00
+
+Негізгі қызметтер:
+- Орналастыру мәселелері
+- Тұрмыстық мәселелер
+- Көшіру рәсімдері
+- Төлем мәселелері"""
+        
+        return """**Информация об общежитии**
+
+Администрация общежития:
+- Телефон: +7 (7242) 123-459
+- Email: info@bolashak.kz
+- Время работы: Пн-Пт 9:00-18:00
+
+Основные услуги:
+- Вопросы заселения
+- Бытовые проблемы
+- Процедуры переселения
+- Вопросы оплаты"""
 
 class AgentRouter:
     def __init__(self):
