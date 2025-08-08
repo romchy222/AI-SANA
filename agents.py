@@ -275,68 +275,68 @@ class BaseAgent(ABC):
                 logger.info(f"No knowledge entries found for agent type: {self.agent_type}")
                 return self._get_fallback_context(message, language)
             
-        # Try semantic search first for better relevance
-        try:
-            semantic_results = semantic_search_engine.semantic_search(
-                query=message,
-                knowledge_entries=knowledge_entries,
-                language=language,
-                max_results=3,
-                semantic_threshold=0.2
-            )
-            
-            if semantic_results:
-                # Format semantic search results
-                context_parts = []
-                for result in semantic_results:
-                    title = result['title']
-                    content = result['content']
-                    semantic_score = result['semantic_score']
-                    
-                    context_parts.append(f"**{title}** (семантическая релевантность: {semantic_score:.2f})\n{content}")
-                
-                semantic_context = "\n\n".join(context_parts)
-                logger.info(f"Semantic search found {len(semantic_results)} relevant entries for '{message[:50]}...'")
-                return semantic_context
-                
-        except Exception as semantic_error:
-            logger.warning(f"Semantic search failed: {semantic_error}, falling back to enhanced search")
-            
-            # Fallback to enhanced search engine
+            # Try semantic search first for better relevance
             try:
-                search_results = knowledge_search_engine.search_knowledge_base(
+                semantic_results = semantic_search_engine.semantic_search(
                     query=message,
                     knowledge_entries=knowledge_entries,
                     language=language,
                     max_results=3,
-                    min_score=0.1
+                    semantic_threshold=0.2
                 )
                 
-                # If enhanced search finds relevant results, use them
-                if search_results:
-                    context = knowledge_search_engine.format_context(search_results, max_length=1500)
-                    logger.info(f"Enhanced search found {len(search_results)} relevant knowledge entries for '{message[:50]}...'")
-                    return context
-            except Exception as search_error:
-                logger.warning(f"Enhanced search failed: {search_error}")
-            
-            # Fallback to simple method if both enhanced searches fail
-            logger.info(f"Using fallback search for '{message[:50]}...'")
-            
-            # Build context from high-priority entries as fallback
-            context_parts = []
-            for entry in knowledge_entries[:2]:  # Top 2 priority entries
-                content = entry.content_ru if language == 'ru' else entry.content_kz
-                if content and content.strip():
-                    context_parts.append(f"**{entry.title}**\n{content}")
-            
-            fallback_context = "\n\n".join(context_parts) if context_parts else ""
-            if fallback_context:
-                logger.info(f"Using {len(context_parts)} fallback knowledge entries")
-                return fallback_context
-            else:
-                logger.info("No usable knowledge entries found, using agent fallback")
-                return self._get_fallback_context(message, language)
+                if semantic_results:
+                    # Format semantic search results
+                    context_parts = []
+                    for result in semantic_results:
+                        title = result['title']
+                        content = result['content']
+                        semantic_score = result['semantic_score']
+                        
+                        context_parts.append(f"**{title}** (семантическая релевантность: {semantic_score:.2f})\n{content}")
+                    
+                    semantic_context = "\n\n".join(context_parts)
+                    logger.info(f"Semantic search found {len(semantic_results)} relevant entries for '{message[:50]}...'")
+                    return semantic_context
+                
+            except Exception as semantic_error:
+                logger.warning(f"Semantic search failed: {semantic_error}, falling back to enhanced search")
+                
+                # Fallback to enhanced search engine
+                try:
+                    search_results = knowledge_search_engine.search_knowledge_base(
+                        query=message,
+                        knowledge_entries=knowledge_entries,
+                        language=language,
+                        max_results=3,
+                        min_score=0.1
+                    )
+                    
+                    # If enhanced search finds relevant results, use them
+                    if search_results:
+                        context = knowledge_search_engine.format_context(search_results, max_length=1500)
+                        logger.info(f"Enhanced search found {len(search_results)} relevant knowledge entries for '{message[:50]}...'")
+                        return context
+                except Exception as search_error:
+                    logger.warning(f"Enhanced search failed: {search_error}")
+                
+                # Fallback to simple method if both enhanced searches fail
+                logger.info(f"Using fallback search for '{message[:50]}...'")
+                
+                # Build context from high-priority entries as fallback
+                context_parts = []
+                for entry in knowledge_entries[:2]:  # Top 2 priority entries
+                    content = entry.content_ru if language == 'ru' else entry.content_kz
+                    if content and content.strip():
+                        context_parts.append(f"**{entry.title}**\n{content}")
+                
+                fallback_context = "\n\n".join(context_parts) if context_parts else ""
+                if fallback_context:
+                    logger.info(f"Using {len(context_parts)} fallback knowledge entries")
+                    return fallback_context
+                else:
+                    logger.info("No usable knowledge entries found, using agent fallback")
+                    return self._get_fallback_context(message, language)
             
         except Exception as e:
             logger.error(f"Error getting agent context for {self.agent_type}: {str(e)}")
