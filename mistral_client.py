@@ -53,7 +53,7 @@ class MistralClient:
                 "role":
                 "user",
                 "content":
-                f"Контекст из FAQ:\n{context}\n\nВопрос пользователя: {user_message}"
+                f"Контекст:\n{context}\n\nВопрос пользователя: {user_message}"
             }]
 
             headers = {
@@ -215,10 +215,10 @@ class MistralClient:
 
         if context and context.strip():
             if language == "kz":
-                return (f"**FAQ дерекқоры:**\n\n{context[:200]}...\n\n"
+                return (f"**Дерекқор:**\n\n{context[:200]}...\n\n"
                         "Толығырақ университет әкімшілігіне хабарласыңыз.")
             return (
-                f"**Контекст FAQ:**\n\n{context[:200]}...\n\n"
+                f"**Контекст:**\n\n{context[:200]}...\n\n"
                 "Для полной информации обратитесь в администрацию университета."
             )
 

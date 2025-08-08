@@ -143,18 +143,18 @@
         <div class="col-6 col-md-3">
             <div class="card bg-gradient-success text-white h-100">
                 <div class="card-body">
-                    <i class="fas fa-question-circle"></i>
-                    <div class="fw-bold">{{ total_faqs or 0 }}</div>
-                    <div class="small">Активных FAQ</div>
+                    <i class="fas fa-users-cog"></i>
+                    <div class="fw-bold">{{ total_agent_knowledge or 0 }}</div>
+                    <div class="small">Записей агентов</div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="card bg-gradient-warning text-dark h-100">
                 <div class="card-body">
-                    <i class="fas fa-folder"></i>
-                    <div class="fw-bold">{{ total_categories or 0 }}</div>
-                    <div class="small">Категорий</div>
+                    <i class="fas fa-file-text"></i>
+                    <div class="fw-bold">{{ total_documents or 0 }}</div>
+                    <div class="small">Документов</div>
                 </div>
             </div>
         </div>
@@ -269,22 +269,10 @@
                     <span class="section-title">Управление</span>
                     <div class="row">
                         <div class="col-md-4">
-                            <a href="{{ url_for('admin.categories') }}" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-folder me-2"></i> Управление категориями
-                            </a>
-                        </div>
-                        <div class="col-md-4">
-                            <a href="{{ url_for('admin.faqs') }}" class="btn btn-outline-success w-100">
-                                <i class="fas fa-question-circle me-2"></i> Управление FAQ
-                            </a>
-                        </div>
-                        <div class="col-md-4">
                             <a href="{{ url_for('admin.queries') }}" class="btn btn-outline-info w-100">
                                 <i class="fas fa-comments me-2"></i> Просмотр запросов
                             </a>
                         </div>
-                    </div>
-                    <div class="row mt-3">
                         <div class="col-md-4">
                             <a href="{{ url_for('admin.documents') }}" class="btn btn-outline-warning w-100">
                                 <i class="fas fa-file-text me-2"></i> Управление документами
@@ -295,13 +283,13 @@
                                 <i class="fas fa-globe me-2"></i> Веб-источники
                             </a>
                         </div>
+                    </div>
+                    <div class="row mt-3">
                         <div class="col-md-4">
                             <a href="{{ url_for('admin.knowledge_base') }}" class="btn btn-outline-dark w-100">
                                 <i class="fas fa-database me-2"></i> База знаний
                             </a>
                         </div>
-                    </div>
-                    <div class="row mt-3">
                         <div class="col-md-4">
                             <a href="{{ url_for('admin.agent_knowledge') }}" class="btn w-100" style="background-color: rgba(168, 85, 247, 0.1); border-color: #A855F7; color: #A855F7;">
                                 <i class="fas fa-users-cog me-2"></i> Базы знаний агентов
