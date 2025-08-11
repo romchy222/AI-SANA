@@ -337,7 +337,61 @@ def tts_proxy():
         return jsonify({'error': 'Failed to generate TTS config'}), 500
 
 
-@main_bp.route('/api/deployment-readiness')
+@main_bp.route('/api/cache-stats')
+def get_cache_stats():
+    """Get cache statistics for monitoring"""
+    try:
+        from response_cache import response_cache
+        stats = response_cache.get_stats()
+        
+        return jsonify({
+            'cache_stats': stats,
+            'status': 'healthy'
+        })
+    except Exception as e:
+        logger.error(f"Error getting cache stats: {str(e)}")
+        return jsonify({'error': 'Failed to get cache stats'}), 500
+
+
+@main_bp.route('/api/system-info')
+def get_system_info():
+    """Get system information including improvements status"""
+    try:
+        from response_cache import response_cache
+        
+        # Test that all improvements are loaded
+        improvements_status = {}
+        
+        try:
+            from knowledge_search import knowledge_search_engine
+            improvements_status['knowledge_search'] = 'active'
+        except Exception:
+            improvements_status['knowledge_search'] = 'error'
+        
+        try:
+            from prompt_engineering import prompt_engineer
+            improvements_status['prompt_engineering'] = 'active'
+        except Exception:
+            improvements_status['prompt_engineering'] = 'error'
+        
+        try:
+            cache_stats = response_cache.get_stats()
+            improvements_status['response_cache'] = 'active'
+        except Exception:
+            improvements_status['response_cache'] = 'error'
+            cache_stats = {}
+        
+        return jsonify({
+            'improvements': improvements_status,
+            'cache_stats': cache_stats,
+            'system_status': 'enhanced' if all(
+                status == 'active' for status in improvements_status.values()
+            ) else 'partial'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting system info: {str(e)}")
+        return jsonify({'error': 'Failed to get system info'}), 500
 def deployment_readiness():
     """
     Comprehensive deployment readiness check

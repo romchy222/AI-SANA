@@ -143,23 +143,14 @@
         <div class="col-6 col-md-3">
             <div class="card bg-gradient-success text-white h-100">
                 <div class="card-body">
-                    <i class="fas fa-question-circle"></i>
-                    <div class="fw-bold">{{ total_faqs or 0 }}</div>
-                    <div class="small">Активных FAQ</div>
+                    <i class="fas fa-users-cog"></i>
+                    <div class="fw-bold">{{ total_agent_knowledge or 0 }}</div>
+                    <div class="small">Записей агентов</div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-md-3">
             <div class="card bg-gradient-warning text-dark h-100">
-                <div class="card-body">
-                    <i class="fas fa-folder"></i>
-                    <div class="fw-bold">{{ total_categories or 0 }}</div>
-                    <div class="small">Категорий</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="card bg-gradient-info text-white h-100">
                 <div class="card-body">
                     <i class="fas fa-clock"></i>
                     <div class="fw-bold">{{ avg_response_time or 0 }}s</div>
@@ -167,9 +158,18 @@
                 </div>
             </div>
         </div>
+        <div class="col-6 col-md-3">
+            <div class="card bg-gradient-info text-white h-100">
+                <div class="card-body">
+                    <i class="fas fa-thumbs-up"></i>
+                    <div class="fw-bold">{{ satisfaction_rate or 0 }}%</div>
+                    <div class="small">Удовлетворенность</div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Charts Section -->
+    <!-- Agent Usage and Performance -->
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card h-100">
@@ -178,29 +178,6 @@
                 </div>
                 <div class="card-body">
                     <canvas id="agentUsageChart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    <span class="section-title"><i class="fas fa-language me-2"></i>Распределение по языкам</span>
-                </div>
-                <div class="card-body">
-                    <canvas id="languageChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header">
-                    <span class="section-title"><i class="fas fa-clock me-2"></i>Время ответа агентов</span>
-                </div>
-                <div class="card-body">
-                    <canvas id="responseTimeChart"></canvas>
                 </div>
             </div>
         </div>
@@ -230,37 +207,6 @@
         </div>
     </div>
 
-    <!-- Knowledge Base Statistics -->
-    <div class="row mb-4 g-3">
-        <div class="col-12 col-md-4">
-            <div class="card bg-gradient-secondary text-white h-100">
-                <div class="card-body">
-                    <i class="fas fa-file-text"></i>
-                    <div class="fw-bold">{{ total_documents or 0 }}</div>
-                    <div class="small">Документов загружено</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-12 col-md-4">
-            <div class="card bg-gradient-dark text-white h-100">
-                <div class="card-body">
-                    <i class="fas fa-globe"></i>
-                    <div class="fw-bold">{{ total_web_sources or 0 }}</div>
-                    <div class="small">Веб-источников</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-12 col-md-4">
-            <div class="card bg-gradient-light text-dark h-100">
-                <div class="card-body">
-                    <i class="fas fa-database"></i>
-                    <div class="fw-bold">{{ total_kb_chunks or 0 }}</div>
-                    <div class="small">Фрагментов в базе знаний</div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Navigation Menu -->
     <div class="row mb-4 dashboard-nav">
         <div class="col-12">
@@ -268,43 +214,24 @@
                 <div class="card-body">
                     <span class="section-title">Управление</span>
                     <div class="row">
-                        <div class="col-md-4">
-                            <a href="{{ url_for('admin.categories') }}" class="btn btn-outline-primary w-100">
-                                <i class="fas fa-folder me-2"></i> Управление категориями
-                            </a>
-                        </div>
-                        <div class="col-md-4">
-                            <a href="{{ url_for('admin.faqs') }}" class="btn btn-outline-success w-100">
-                                <i class="fas fa-question-circle me-2"></i> Управление FAQ
-                            </a>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <a href="{{ url_for('admin.queries') }}" class="btn btn-outline-info w-100">
                                 <i class="fas fa-comments me-2"></i> Просмотр запросов
                             </a>
                         </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <a href="{{ url_for('admin.agent_knowledge') }}" class="btn w-100" style="background-color: rgba(168, 85, 247, 0.1); border-color: #A855F7; color: #A855F7;">
+                                <i class="fas fa-users-cog me-2"></i> Базы знаний агентов
+                            </a>
+                        </div>
+                        <div class="col-md-3">
                             <a href="{{ url_for('admin.documents') }}" class="btn btn-outline-warning w-100">
                                 <i class="fas fa-file-text me-2"></i> Управление документами
                             </a>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <a href="{{ url_for('admin.web_sources') }}" class="btn btn-outline-secondary w-100">
                                 <i class="fas fa-globe me-2"></i> Веб-источники
-                            </a>
-                        </div>
-                        <div class="col-md-4">
-                            <a href="{{ url_for('admin.knowledge_base') }}" class="btn btn-outline-dark w-100">
-                                <i class="fas fa-database me-2"></i> База знаний
-                            </a>
-                        </div>
-                    </div>
-                    <div class="row mt-3">
-                        <div class="col-md-4">
-                            <a href="{{ url_for('admin.agent_knowledge') }}" class="btn w-100" style="background-color: rgba(168, 85, 247, 0.1); border-color: #A855F7; color: #A855F7;">
-                                <i class="fas fa-users-cog me-2"></i> Базы знаний агентов
                             </a>
                         </div>
                     </div>
@@ -387,22 +314,16 @@
                 <div class="card-body">
                     <div id="ratingStats" class="text-center">
                         <div class="row">
-                            <div class="col-4">
+                            <div class="col-6">
                                 <div class="metric-card">
                                     <div class="metric-value text-success" id="totalLikes">-</div>
                                     <div class="metric-label">👍 Лайки</div>
                                 </div>
                             </div>
-                            <div class="col-4">
+                            <div class="col-6">
                                 <div class="metric-card">
                                     <div class="metric-value text-danger" id="totalDislikes">-</div>
                                     <div class="metric-label">👎 Дизлайки</div>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="metric-card">
-                                    <div class="metric-value text-info" id="satisfactionRate">-</div>
-                                    <div class="metric-label">% Удовлетв.</div>
                                 </div>
                             </div>
                         </div>
@@ -417,20 +338,6 @@
                 </div>
                 <div class="card-body">
                     <canvas id="agentRatingChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Тренды оценок -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <span class="section-title">📊 Тренд оценок за последние 30 дней</span>
-                </div>
-                <div class="card-body">
-                    <canvas id="ratingTrendChart"></canvas>
                 </div>
             </div>
         </div>
@@ -461,12 +368,9 @@
             const data = await response.json();
             if (data.error) throw new Error(data.error);
             const hasData = (data.agent_usage && data.agent_usage.length > 0) ||
-                            (data.language_distribution && data.language_distribution.length > 0) ||
                             (data.daily_activity && data.daily_activity.length > 0);
             if (!hasData) return;
             createAgentUsageChart(data.agent_usage || []);
-            createLanguageChart(data.language_distribution || []);
-            createResponseTimeChart(data.agent_usage || []);
             createSuccessRateChart(data.agent_usage || []);
             createDailyUsageChart(data.daily_activity || []);
         } catch (error) {
@@ -495,66 +399,6 @@
                 plugins: {
                     legend: { position: 'bottom' }
                 }
-            }
-        });
-    }
-
-    // Language Distribution Chart
-    function createLanguageChart(data) {
-        if (!data || !Array.isArray(data) || data.length === 0) return;
-        const ctx = document.getElementById('languageChart').getContext('2d');
-        const languageData = data.reduce((acc, item) => {
-            const lang = item.language || 'unknown';
-            acc[lang] = (acc[lang] || 0) + (item.count || 0);
-            return acc;
-        }, {});
-        const labels = Object.keys(languageData).map(lang => {
-            switch(lang) {
-                case 'ru': return 'Русский';
-                case 'kz': return 'Қазақша';
-                default: return 'Неизвестный';
-            }
-        });
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: labels,
-                datasets: [{
-                    data: Object.values(languageData),
-                    backgroundColor: [chartColors.primary, chartColors.success, chartColors.secondary],
-                    borderWidth: 2,
-                    borderColor: '#fff'
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
-    }
-
-    // Response Time Bar Chart
-    function createResponseTimeChart(data) {
-        if (!data || !Array.isArray(data) || data.length === 0) return;
-        const ctx = document.getElementById('responseTimeChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: data.map(item => item.name || 'Неизвестный'),
-                datasets: [{
-                    label: 'Среднее время ответа (сек)',
-                    data: data.map(item => item.avg_response_time || 0),
-                    backgroundColor: chartColors.info,
-                    borderColor: chartColors.info,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true }
-                },
-                plugins: { legend: { display: false } }
             }
         });
     }
@@ -628,12 +472,8 @@
             const ratingStats = data.rating_stats || {};
             document.getElementById('totalLikes').textContent = ratingStats.likes || 0;
             document.getElementById('totalDislikes').textContent = ratingStats.dislikes || 0;
-            document.getElementById('satisfactionRate').textContent = (ratingStats.satisfaction_rate !== undefined ? ratingStats.satisfaction_rate.toFixed(1) : 0) + '%';
             if (data.rating_by_agent && data.rating_by_agent.length > 0) {
                 renderAgentRatingChart(data.rating_by_agent);
-            }
-            if (data.daily_ratings && data.daily_ratings.length > 0) {
-                renderRatingTrendChart(data.daily_ratings);
             }
         } catch (error) {
             console.error('Ошибка при загрузке аналитики оценок:', error);
@@ -658,47 +498,6 @@
                 datasets: [
                     { label: '👍 Лайки', data: likesData, backgroundColor: '#22c55e', borderRadius: 4 },
                     { label: '👎 Дизлайки', data: dislikesData, backgroundColor: '#ef4444', borderRadius: 4 }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'top' } }
-            }
-        });
-    }
-
-    function renderRatingTrendChart(dailyRatings) {
-        const ctx = document.getElementById('ratingTrendChart').getContext('2d');
-        const dates = [...new Set(dailyRatings.map(item => item.date))].sort();
-        const likesData = dates.map(date => {
-            const likes = dailyRatings.find(item => item.date === date && item.rating === 'like');
-            return likes ? likes.count : 0;
-        });
-        const dislikesData = dates.map(date => {
-            const dislikes = dailyRatings.find(item => item.date === date && item.rating === 'dislike');
-            return dislikes ? dislikes.count : 0;
-        });
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [
-                    {
-                        label: '👍 Лайки',
-                        data: likesData,
-                        borderColor: '#22c55e',
-                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                        tension: 0.3,
-                        fill: true
-                    },
-                    {
-                        label: '👎 Дизлайки',
-                        data: dislikesData,
-                        borderColor: '#ef4444',
-                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                        tension: 0.3,
-                        fill: true
-                    }
                 ]
             },
             options: {

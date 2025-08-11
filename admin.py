@@ -140,15 +140,14 @@ def dashboard():
     """Admin dashboard with statistics"""
     try:
         # Импорт моделей и базы данных (отложенный импорт для избежания циклов)
-        from models import UserQuery, FAQ, Category, Document, WebSource, KnowledgeBase, db
+        from models import UserQuery, Document, WebSource, KnowledgeBase, AgentKnowledgeBase, db
 
         # Получение статистики
         total_queries = UserQuery.query.count()
-        total_faqs = FAQ.query.filter_by(is_active=True).count()
-        total_categories = Category.query.count()
         total_documents = Document.query.filter_by(is_active=True).count()
         total_web_sources = WebSource.query.filter_by(is_active=True).count()
         total_kb_chunks = KnowledgeBase.query.filter_by(is_active=True).count()
+        total_agent_knowledge = AgentKnowledgeBase.query.filter_by(is_active=True).count()
 
         # Последние 10 запросов пользователей
         recent_queries = UserQuery.query.order_by(UserQuery.created_at.desc()).limit(10).all()
@@ -182,11 +181,10 @@ def dashboard():
 
         return render_template('admin/dashboard.html',
                              total_queries=total_queries,
-                             total_faqs=total_faqs,
-                             total_categories=total_categories,
                              total_documents=total_documents,
                              total_web_sources=total_web_sources,
                              total_kb_chunks=total_kb_chunks,
+                             total_agent_knowledge=total_agent_knowledge,
                              recent_queries=recent_queries,
                              daily_stats=daily_stats,
                              avg_response_time=round(avg_response_time, 2),
@@ -199,122 +197,7 @@ def dashboard():
         return render_template('admin/dashboard.html')
 # ...existing code...
 
-@admin_bp.route('/categories')
-@admin_required
-def categories():
-    """Manage categories"""
-    try:
-        from models import Category
-        from models import db
-
-        page = request.args.get('page', 1, type=int)
-        categories_list = Category.query.paginate(
-            page=page, per_page=10, error_out=False
-        )
-        return render_template('admin/categories.html', categories=categories_list)
-    except Exception as e:
-        logger.error(f"Error in categories page: {str(e)}")
-        flash('Ошибка при загрузке категорий', 'error')
-        return render_template('admin/categories.html', categories=None)
-
-@admin_bp.route('/categories/add', methods=['POST'])
-@admin_required
-def add_category():
-    """Add new category"""
-    try:
-        from models import Category
-        from models import db
-
-        name_ru = request.form.get('name_ru', '').strip()
-        name_kz = request.form.get('name_kz', '').strip()
-        description_ru = request.form.get('description_ru', '').strip()
-        description_kz = request.form.get('description_kz', '').strip()
-
-        if not name_ru or not name_kz:
-            flash('Название на обоих языках обязательно', 'error')
-            return redirect(url_for('admin.categories'))
-
-        category = Category(
-            name_ru=name_ru,
-            name_kz=name_kz,
-            description_ru=description_ru,
-            description_kz=description_kz
-        )
-
-        db.session.add(category)
-        db.session.commit()
-        flash('Категория успешно добавлена', 'success')
-
-    except Exception as e:
-        logger.error(f"Error adding category: {str(e)}")
-        flash('Ошибка при добавлении категории', 'error')
-
-    return redirect(url_for('admin.categories'))
-
-@admin_bp.route('/faqs')
-@admin_required
-def faqs():
-    """Manage FAQs"""
-    try:
-        from models import FAQ, Category
-
-        page = request.args.get('page', 1, type=int)
-        category_id = request.args.get('category_id', type=int)
-
-        query = FAQ.query
-        if category_id:
-            query = query.filter_by(category_id=category_id)
-
-        faqs_list = query.order_by(FAQ.created_at.desc()).paginate(
-            page=page, per_page=10, error_out=False
-        )
-
-        categories_list = Category.query.all()
-
-        return render_template('admin/faqs.html', 
-                             faqs=faqs_list, 
-                             categories=categories_list,
-                             selected_category=category_id)
-    except Exception as e:
-        logger.error(f"Error in FAQs page: {str(e)}")
-        flash('Ошибка при загрузке FAQ', 'error')
-        return render_template('admin/faqs.html', faqs=None, categories=[])
-
-@admin_bp.route('/faqs/add', methods=['POST'])
-@admin_required
-def add_faq():
-    """Add new FAQ"""
-    try:
-        from models import FAQ
-        from models import db
-
-        question_ru = request.form.get('question_ru', '').strip()
-        question_kz = request.form.get('question_kz', '').strip()
-        answer_ru = request.form.get('answer_ru', '').strip()
-        answer_kz = request.form.get('answer_kz', '').strip()
-        category_id = request.form.get('category_id', type=int)
-
-        if not all([question_ru, question_kz, answer_ru, answer_kz, category_id]):
-            flash('Все поля обязательны для заполнения', 'error')
-            return redirect(url_for('admin.faqs'))
-
-        faq = FAQ(
-            question_ru=question_ru,
-            question_kz=question_kz,
-            answer_ru=answer_ru,
-            answer_kz=answer_kz,
-            category_id=category_id
-        )
-
-        db.session.add(faq)
-        db.session.commit()
-        flash('FAQ успешно добавлен', 'success')
-
-    except Exception as e:
-        logger.error(f"Error adding FAQ: {str(e)}")
-        flash('Ошибка при добавлении FAQ', 'error')
-
-    return redirect(url_for('admin.faqs'))
+# ...existing code...
 
 @admin_bp.route('/queries')
 @admin_required

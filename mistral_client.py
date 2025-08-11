@@ -11,8 +11,11 @@ class MistralClient:
     """Client for interacting with Mistral AI API"""
 
     def __init__(self):
-        self.api_key = os.environ.get("MISTRAL_API_KEY",
-                                      "nxJcrPGFtx89fMeaLM2FdJS6STblMHAf")
+        # Remove hardcoded API key - use environment variable only
+        self.api_key = os.environ.get("MISTRAL_API_KEY")
+        if not self.api_key:
+            logger.warning("MISTRAL_API_KEY not found in environment variables")
+            
         self.base_url = "https://api.mistral.ai/v1"
         self.model = "mistral-small-latest"
 
@@ -50,7 +53,7 @@ class MistralClient:
                 "role":
                 "user",
                 "content":
-                f"Контекст из FAQ:\n{context}\n\nВопрос пользователя: {user_message}"
+                f"Контекст:\n{context}\n\nВопрос пользователя: {user_message}"
             }]
 
             headers = {
@@ -92,19 +95,35 @@ class MistralClient:
                                         context: str = "",
                                         language: str = "ru",
                                         custom_system_prompt: str = "") -> str:
-        """Get response using a custom system prompt"""
+        """Get response using enhanced prompt engineering and custom system prompt"""
         try:
+            # Check if API key is available
+            if not self.api_key:
+                logger.error("Mistral API key not configured")
+                return self._get_fallback_response(language)
+            
+            # Use enhanced prompt engineering
+            from prompt_engineering import prompt_engineer
+            
             # Use custom system prompt if provided, otherwise fall back to default
             system_prompt = custom_system_prompt if custom_system_prompt else self.system_prompts.get(language, self.system_prompts['ru'])
 
+            # Generate enhanced prompt with quality assessment
+            enhanced_prompt, quality_metrics = prompt_engineer.generate_enhanced_prompt(
+                system_prompt=system_prompt,
+                context=context,
+                user_query=user_message,
+                language=language
+            )
+            
+            # Log quality metrics for monitoring
+            logger.info(f"Prompt quality: relevance={quality_metrics.get('relevance', 0):.2f}, "
+                       f"tokens={quality_metrics.get('final_tokens', 0)}")
+
+            # For enhanced prompts, we use a single user message with structured content
             messages = [{
-                "role": "system",
-                "content": system_prompt
-            }, {
-                "role":
-                "user",
-                "content":
-                f"Контекст из FAQ:\n{context}\n\nВопрос пользователя: {user_message}"
+                "role": "user",
+                "content": enhanced_prompt
             }]
 
             headers = {
@@ -126,7 +145,11 @@ class MistralClient:
 
             if response.status_code == 200:
                 result = response.json()
-                return result['choices'][0]['message']['content'].strip()
+                ai_response = result['choices'][0]['message']['content'].strip()
+                
+                # Log successful generation with quality info
+                logger.info(f"Generated response with context relevance: {quality_metrics.get('relevance', 0):.2f}")
+                return ai_response
             else:
                 logger.error(
                     f"Mistral API error: {response.status_code} - {response.text}"
@@ -135,10 +158,9 @@ class MistralClient:
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Request error to Mistral API: {str(e)}")
-            return self._get_smart_fallback_response(user_message, context,
-                                                     language)
+            return self._get_smart_fallback_response(user_message, context, language)
         except Exception as e:
-            logger.error(f"Unexpected error in Mistral client: {str(e)}")
+            logger.error(f"Unexpected error in enhanced Mistral client: {str(e)}")
             return self._get_fallback_response(language)
 
     def _get_smart_fallback_response(self,
@@ -193,10 +215,10 @@ class MistralClient:
 
         if context and context.strip():
             if language == "kz":
-                return (f"**FAQ дерекқоры:**\n\n{context[:200]}...\n\n"
+                return (f"**Дерекқор:**\n\n{context[:200]}...\n\n"
                         "Толығырақ университет әкімшілігіне хабарласыңыз.")
             return (
-                f"**Контекст FAQ:**\n\n{context[:200]}...\n\n"
+                f"**Контекст:**\n\n{context[:200]}...\n\n"
                 "Для полной информации обратитесь в администрацию университета."
             )
 
