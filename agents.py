@@ -384,7 +384,32 @@ class AIAbiturAgent(BaseAgent):
 """
 
     def _get_fallback_context(self, message: str, language: str = "ru") -> str:
-        """Provide basic admission context when knowledge base is unavailable"""
+        """Provide enhanced admission context with specific functionality"""
+        try:
+            # Import enhanced functionality
+            from enhanced_agents import AIAbiturEnhanced
+            enhanced = AIAbiturEnhanced()
+            
+            # Check if message is asking for specific information
+            message_lower = message.lower()
+            
+            if any(word in message_lower for word in ['документы', 'справки', 'заявление', 'форма']):
+                # Get templates
+                templates = enhanced.get_application_templates(language)
+                if templates:
+                    template_list = "\n".join([f"- {t['name']}" for t in templates[:3]])
+                    return f"**Доступные шаблоны документов:**\n{template_list}\n\nДля получения шаблона используйте API: /api/enhanced/abitur/templates"
+            
+            elif any(word in message_lower for word in ['требования', 'программа', 'специальность']):
+                # Get admission info
+                info = enhanced.get_admission_info(language)
+                faculties_text = "\n".join([f"- {f['name']} ({f['programs']} программ)" for f in info['faculties']])
+                return f"**Факультеты университета:**\n{faculties_text}\n\n**Контакты приемной комиссии:**\n- Телефон: {info['contact_info']['phone']}\n- Email: {info['contact_info']['email']}"
+            
+        except Exception as e:
+            pass  # Fall back to static context
+        
+        # Fallback to static context
         if language == "kz":
             return """**Қызылорда "Болашақ" университетіне түсу**
 
@@ -397,7 +422,9 @@ class AIAbiturAgent(BaseAgent):
 - Мектеп аттестаты
 - Денсаулық туралы анықтама
 - Фотосуреттер (3x4)
-- Жеке куәлік көшірмесі"""
+- Жеке куәлік көшірмесі
+
+💡 Егжей-тегжейлі ақпарат алу үшін: /api/enhanced/abitur/admission-info"""
         
         return """**Поступление в Кызылординский университет "Болашак"**
 
@@ -410,7 +437,9 @@ class AIAbiturAgent(BaseAgent):
 - Аттестат о среднем образовании
 - Справка о состоянии здоровья
 - Фотографии 3x4
-- Копия удостоверения личности"""
+- Копия удостоверения личности
+
+💡 Подробную информацию можно получить через: /api/enhanced/abitur/admission-info"""
 
 class KadrAIAgent(BaseAgent):
     def __init__(self):
