@@ -524,3 +524,31 @@ def deployment_readiness():
             'error': f'Ошибка проверки готовности: {str(e)}',
             'deployment_ready': False
         }), 500
+
+
+@main_bp.route('/health')
+def deployment_health():
+    """Health check endpoint for deployment verification"""
+    try:
+        # Import here to avoid circular imports
+        from models import db
+        from sqlalchemy import text
+        
+        # Basic database connectivity test
+        with db.engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        
+        return jsonify({
+            'status': 'healthy',
+            'timestamp': datetime.now().isoformat(),
+            'database': 'connected',
+            'version': '1.0.0'
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return jsonify({
+            'status': 'unhealthy',
+            'timestamp': datetime.now().isoformat(),
+            'error': str(e)
+        }), 500
