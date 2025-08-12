@@ -8,7 +8,7 @@ class DatabaseConfig:
     """Database configuration settings"""
     
     # Database type selection
-    DB_TYPE = os.environ.get('DB_TYPE', 'postgresql')  # 'sqlite', 'postgresql', 'mysql'
+    DB_TYPE = os.environ.get('DB_TYPE', 'sqlite')  # 'sqlite', 'postgresql', 'mysql'
     
     # SQLite settings
     SQLITE_PATH = os.environ.get('SQLITE_PATH', 'bolashakbot.db')
