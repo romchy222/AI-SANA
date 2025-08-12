@@ -250,3 +250,267 @@ class AdminUser(db.Model):
     
     def __repr__(self):
         return f'<AdminUser {self.username}>'
+
+# Enhanced models for specific agent functionality
+
+class DocumentTemplate(db.Model):
+    """Templates for various university documents and forms"""
+    __tablename__ = 'document_templates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name_ru = db.Column(db.String(200), nullable=False)
+    name_kz = db.Column(db.String(200), nullable=False)
+    name_en = db.Column(db.String(200))
+    category = db.Column(db.String(100), nullable=False)  # admission, hr, student, housing, etc.
+    agent_type = db.Column(db.String(50), nullable=False)  # Which agent this template belongs to
+    template_content = db.Column(db.Text, nullable=False)  # Template content in HTML/Markdown
+    required_fields = db.Column(db.JSON)  # JSON array of required field names
+    instructions_ru = db.Column(db.Text)  # Instructions in Russian
+    instructions_kz = db.Column(db.Text)  # Instructions in Kazakh
+    file_path = db.Column(db.String(500))  # Path to downloadable template file
+    is_active = db.Column(db.Boolean, default=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('admin_users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def get_name(self, language='ru'):
+        if language == 'kz' and self.name_kz:
+            return self.name_kz
+        elif language == 'en' and self.name_en:
+            return self.name_en
+        return self.name_ru
+    
+    def get_instructions(self, language='ru'):
+        if language == 'kz' and self.instructions_kz:
+            return self.instructions_kz
+        return self.instructions_ru
+    
+    def __repr__(self):
+        return f'<DocumentTemplate {self.category}:{self.name_ru}>'
+
+class StudentRequest(db.Model):
+    """Tracking system for student requests (HR, housing, academic)"""
+    __tablename__ = 'student_requests'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    request_id = db.Column(db.String(50), unique=True, nullable=False)  # Human-readable ID
+    student_id = db.Column(db.String(50))  # Student ID number
+    student_name = db.Column(db.String(200))
+    student_email = db.Column(db.String(120))
+    request_type = db.Column(db.String(50), nullable=False)  # housing, hr, academic, etc.
+    category = db.Column(db.String(100))  # specific subcategory
+    title = db.Column(db.String(300), nullable=False)
+    description = db.Column(db.Text)
+    status = db.Column(db.String(50), default='submitted')  # submitted, in_progress, approved, rejected, completed
+    priority = db.Column(db.String(20), default='normal')  # low, normal, high, urgent
+    
+    # Document attachments
+    attached_documents = db.Column(db.JSON)  # Array of document paths/names
+    
+    # Processing information
+    assigned_to = db.Column(db.String(200))  # Department/person assigned to
+    processed_by = db.Column(db.Integer, db.ForeignKey('admin_users.id'))
+    processing_notes = db.Column(db.Text)
+    
+    # Timestamps
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    due_date = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    
+    def __repr__(self):
+        return f'<StudentRequest {self.request_id}:{self.title}>'
+
+class Schedule(db.Model):
+    """University schedules for classes, exams, events"""
+    __tablename__ = 'schedules'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    schedule_type = db.Column(db.String(50), nullable=False)  # class, exam, event, meeting
+    title = db.Column(db.String(300), nullable=False)
+    description = db.Column(db.Text)
+    
+    # Academic information
+    faculty = db.Column(db.String(100))
+    department = db.Column(db.String(100))
+    course_code = db.Column(db.String(50))
+    group_name = db.Column(db.String(50))
+    instructor = db.Column(db.String(200))
+    
+    # Time and location
+    start_time = db.Column(db.DateTime, nullable=False)
+    end_time = db.Column(db.DateTime, nullable=False)
+    location = db.Column(db.String(200))
+    room = db.Column(db.String(50))
+    
+    # Recurrence
+    is_recurring = db.Column(db.Boolean, default=False)
+    recurrence_pattern = db.Column(db.String(100))  # weekly, daily, etc.
+    
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    is_cancelled = db.Column(db.Boolean, default=False)
+    cancellation_reason = db.Column(db.Text)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<Schedule {self.schedule_type}:{self.title}>'
+
+class JobPosting(db.Model):
+    """Job postings for career services"""
+    __tablename__ = 'job_postings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(300), nullable=False)
+    company_name = db.Column(db.String(200), nullable=False)
+    company_website = db.Column(db.String(500))
+    job_type = db.Column(db.String(50), nullable=False)  # internship, part_time, full_time, contract
+    employment_type = db.Column(db.String(50))  # remote, onsite, hybrid
+    
+    # Job details
+    description = db.Column(db.Text, nullable=False)
+    requirements = db.Column(db.Text)
+    benefits = db.Column(db.Text)
+    salary_range = db.Column(db.String(100))
+    location = db.Column(db.String(200))
+    
+    # Targeting
+    target_faculties = db.Column(db.JSON)  # Array of faculty names
+    target_skills = db.Column(db.JSON)  # Array of required skills
+    experience_level = db.Column(db.String(50))  # entry, junior, mid, senior
+    
+    # Application details
+    application_url = db.Column(db.String(500))
+    application_email = db.Column(db.String(120))
+    application_deadline = db.Column(db.DateTime)
+    
+    # Status
+    is_active = db.Column(db.Boolean, default=True)
+    is_featured = db.Column(db.Boolean, default=False)
+    is_internal = db.Column(db.Boolean, default=False)  # Internal university position
+    
+    # Tracking
+    views_count = db.Column(db.Integer, default=0)
+    applications_count = db.Column(db.Integer, default=0)
+    
+    posted_by = db.Column(db.Integer, db.ForeignKey('admin_users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<JobPosting {self.company_name}:{self.title}>'
+
+class HousingRoom(db.Model):
+    """Dormitory room management"""
+    __tablename__ = 'housing_rooms'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    building = db.Column(db.String(50), nullable=False)
+    floor = db.Column(db.Integer, nullable=False)
+    room_number = db.Column(db.String(20), nullable=False)
+    room_type = db.Column(db.String(50), nullable=False)  # single, double, triple, etc.
+    capacity = db.Column(db.Integer, nullable=False)
+    current_occupancy = db.Column(db.Integer, default=0)
+    
+    # Room details
+    amenities = db.Column(db.JSON)  # Array of amenities
+    monthly_cost = db.Column(db.Float)
+    deposit_amount = db.Column(db.Float)
+    
+    # Status
+    status = db.Column(db.String(50), default='available')  # available, occupied, maintenance, reserved
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Maintenance
+    last_maintenance = db.Column(db.DateTime)
+    next_maintenance = db.Column(db.DateTime)
+    maintenance_notes = db.Column(db.Text)
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<HousingRoom {self.building}-{self.room_number}>'
+
+class HousingAssignment(db.Model):
+    """Student housing assignments"""
+    __tablename__ = 'housing_assignments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.String(50), nullable=False)
+    student_name = db.Column(db.String(200), nullable=False)
+    student_email = db.Column(db.String(120))
+    
+    room_id = db.Column(db.Integer, db.ForeignKey('housing_rooms.id'), nullable=False)
+    room = db.relationship('HousingRoom', backref='assignments')
+    
+    # Assignment details
+    assignment_type = db.Column(db.String(50), default='regular')  # regular, temporary, emergency
+    start_date = db.Column(db.DateTime, nullable=False)
+    end_date = db.Column(db.DateTime)
+    
+    # Status
+    status = db.Column(db.String(50), default='active')  # active, completed, cancelled
+    
+    # Payment tracking
+    monthly_payment = db.Column(db.Float)
+    deposit_paid = db.Column(db.Float, default=0)
+    last_payment_date = db.Column(db.DateTime)
+    
+    # Emergency contact
+    emergency_contact_name = db.Column(db.String(200))
+    emergency_contact_phone = db.Column(db.String(50))
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<HousingAssignment {self.student_name}:{self.room.building}-{self.room.room_number}>'
+
+class Notification(db.Model):
+    """System notifications for various events"""
+    __tablename__ = 'notifications'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    notification_type = db.Column(db.String(50), nullable=False)  # reminder, alert, info, warning
+    target_audience = db.Column(db.String(100))  # all, students, staff, specific_group
+    agent_type = db.Column(db.String(50))  # Which agent sends this notification
+    
+    # Content
+    title_ru = db.Column(db.String(300), nullable=False)
+    title_kz = db.Column(db.String(300), nullable=False)
+    message_ru = db.Column(db.Text, nullable=False)
+    message_kz = db.Column(db.Text, nullable=False)
+    
+    # Targeting
+    target_users = db.Column(db.JSON)  # Array of specific user IDs/emails
+    target_faculties = db.Column(db.JSON)  # Array of faculty names
+    target_groups = db.Column(db.JSON)  # Array of group names
+    
+    # Scheduling
+    send_at = db.Column(db.DateTime)
+    sent_at = db.Column(db.DateTime)
+    expires_at = db.Column(db.DateTime)
+    
+    # Status
+    status = db.Column(db.String(50), default='draft')  # draft, scheduled, sent, expired
+    is_urgent = db.Column(db.Boolean, default=False)
+    
+    # Tracking
+    sent_count = db.Column(db.Integer, default=0)
+    read_count = db.Column(db.Integer, default=0)
+    
+    created_by = db.Column(db.Integer, db.ForeignKey('admin_users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def get_title(self, language='ru'):
+        return self.title_kz if language == 'kz' else self.title_ru
+    
+    def get_message(self, language='ru'):
+        return self.message_kz if language == 'kz' else self.message_ru
+    
+    def __repr__(self):
+        return f'<Notification {self.notification_type}:{self.title_ru}>'

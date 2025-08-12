@@ -42,6 +42,11 @@ def chat_new():
     """New chat page"""
     return render_template('chat_new.html')
 
+@main_bp.route('/demo')
+def enhanced_demo():
+    """Enhanced functionality demo page"""
+    return render_template('enhanced_demo.html')
+
 @main_bp.route('/chat-old')
 def chat_page():
     """Old chat page"""

@@ -88,6 +88,10 @@ def create_app():
     app.register_blueprint(main_bp)  # Основные страницы
     app.register_blueprint(admin_bp, url_prefix='/admin')  # Админ панель
     app.register_blueprint(auth_bp, url_prefix='/auth')  # Аутентификация
+    
+    # Register enhanced API blueprint
+    from api_enhanced import api_enhanced
+    app.register_blueprint(api_enhanced)
 
     # Инициализация в контексте приложения
     with app.app_context():
