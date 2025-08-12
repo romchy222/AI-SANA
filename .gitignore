@@ -32,3 +32,10 @@ tmp/
 
 # Generated reports
 deployment_readiness_report.json
+
+# Vercel
+.vercel
+
+# Environment files
+.env.local
+.env.production

@@ -19,3 +19,6 @@ dependencies = [
     "cryptography>=45.0.6",
     "pg8000>=1.31.4",
 ]
+
+[tool.setuptools]
+py-modules = ["app", "config", "models", "views", "admin", "auth", "agents", "vercel_app"]
